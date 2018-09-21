@@ -37,8 +37,7 @@ type Node struct {
 	CommitLock         sync.Mutex
 	CurrentHeight      int64
 	RetryPrePrepareMsg map[int64]*consensus.PrePrepareMsg
-	Count              int64
-	Count2             int64
+	Stop               bool
 }
 
 type MsgBuffer struct {
@@ -259,7 +258,9 @@ func (node *Node) delayPrePrepareMessage(prePrepareMsg *consensus.PrePrepareMsg)
 	if prePrepareMsg.Height == node.CurrentHeight {
 		node.Broadcast(prePrepareMsg, "/preprepare")
 		time.Sleep(time.Second * 10)
-		node.delayPrePrepareMessage(prePrepareMsg)
+		if !node.Stop {
+			node.delayPrePrepareMessage(prePrepareMsg)
+		}
 	}
 }
 

@@ -453,6 +453,7 @@ func (ss *PbftServerMgr) Notify(id *big.Int, action int) error {
 		}
 	case Stop:
 		if server, ok := ss.servers[id.Uint64()]; ok {
+			server.server.Node.Stop = true
 			server.server.Stop()
 			server.clear = true
 		}
