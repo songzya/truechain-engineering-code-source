@@ -38,7 +38,7 @@ func getID() *big.Int {
 	return ID
 }
 
-func (pap *PbftAgentProxyImp) FetchFastBlock() (*types.Block, error) {
+func (pap *PbftAgentProxyImp) FetchFastBlock(committeeId *big.Int) (*types.Block, error) {
 	header := new(types.Header)
 	header.Number = getID()
 	header.Time = big.NewInt(time.Now().Unix())

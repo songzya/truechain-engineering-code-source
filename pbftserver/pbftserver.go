@@ -192,7 +192,7 @@ func (ss *PbftServerMgr) GetRequest(id *big.Int) (*consensus.RequestMsg, error) 
 
 	fb, err := ss.Agent.FetchFastBlock(nil)
 
-	fmt.Println("[pbft server] FetchFastBlock", fb.Header().Time)
+	lock.PSLog("[pbft server]", " FetchFastBlock header", fb.Header().Time)
 
 	if len(fb.Body().Transactions) == 0 {
 		if ss.blockSleep < BlockSleepMax {
@@ -211,7 +211,6 @@ func (ss *PbftServerMgr) GetRequest(id *big.Int) (*consensus.RequestMsg, error) 
 		return nil, errors.New("same height:" + fb.Number().String())
 	}
 
-	//fmt.Println(len(ss.blocks))
 	sum := ss.getBlockLen()
 
 	if sum > 0 {
@@ -282,7 +281,6 @@ func (ss *PbftServerMgr) ReplyResult(msg *consensus.RequestMsg, res uint) bool {
 	}
 	lock.PSLog("[Agent]", "BroadcastConsensus", "start")
 	err := ss.Agent.BroadcastConsensus(block)
-	fmt.Println("[pbft server] BroadcastConsensus", block.Header().Time)
 	lock.PSLog("[Agent]", "BroadcastConsensus", err == nil, "end")
 	//ss.removeBlock(height)
 	if err != nil {
@@ -295,7 +293,6 @@ func (ss *PbftServerMgr) Broadcast(height *big.Int) {
 	if fb := ss.getBlock(height.Uint64()); fb != nil {
 		lock.PSLog("[Agent]", "BroadcastFastBlock", "start")
 		ss.Agent.BroadcastFastBlock(fb)
-		fmt.Println("[leader]", "BroadcastFastBlock")
 		lock.PSLog("[Agent]", "BroadcastFastBlock", "end")
 	}
 }
@@ -426,7 +423,6 @@ func (ss *PbftServerMgr) runServer(server *serverInfo, id *big.Int) {
 	if bytes.Equal(crypto.FromECDSAPub(server.leader), crypto.FromECDSAPub(ss.pk)) {
 		for {
 			b, _ := serverCheck(server)
-			//fmt.Println("server count:", c)
 			if b {
 				time.Sleep(time.Second * ServerWait)
 				break
