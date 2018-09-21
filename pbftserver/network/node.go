@@ -826,7 +826,6 @@ func (node *Node) resolveMsg() {
 
 func (node *Node) alarmToDispatcher() {
 	for {
-		node.Count += 1
 		time.Sleep(ResolvingTimeDuration)
 		node.Alarm <- true
 	}
