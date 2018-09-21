@@ -190,7 +190,7 @@ func (ss *PbftServerMgr) GetRequest(id *big.Int) (*consensus.RequestMsg, error) 
 		return nil, errors.New("server stop")
 	}
 
-	fb, err := ss.Agent.FetchFastBlock(nil)
+	fb, err := ss.Agent.FetchFastBlock(id)
 
 	lock.PSLog("[pbft server]", " FetchFastBlock header", fb.Header().Time)
 
@@ -443,7 +443,7 @@ func (ss *PbftServerMgr) runServer(server *serverInfo, id *big.Int) {
 }
 
 func (ss *PbftServerMgr) Notify(id *big.Int, action int) error {
-	lock.PSLog("PutNodes", id, action)
+	lock.PSLog("Notify", id, action)
 	switch action {
 	case Start:
 		if server, ok := ss.servers[id.Uint64()]; ok {
