@@ -46,7 +46,7 @@ func (pap *PbftAgentProxyImp) FetchFastBlock(committeeId *big.Int) (*types.Block
 	return types.NewBlock(header, nil, nil, nil), nil
 }
 func (pap *PbftAgentProxyImp) VerifyFastBlock(block *types.Block) error {
-	//if rand.Intn(100) > 30 {
+	//if rand.Intn(100) > 50 {
 	//	println("[AGENT]", pap.Name, "VerifyFastBlock", "Number:", block.Header().Number.Uint64(), types.ErrHeightNotYet.Error())
 	//	return types.ErrHeightNotYet
 	//}
