@@ -10,6 +10,7 @@ import (
 	"github.com/truechain/truechain-engineering-code/core/types"
 	"github.com/truechain/truechain-engineering-code/crypto"
 	"github.com/truechain/truechain-engineering-code/crypto/sha3"
+	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/pbftserver/consensus"
 	"github.com/truechain/truechain-engineering-code/pbftserver/lock"
 	"github.com/truechain/truechain-engineering-code/pbftserver/network"
@@ -431,6 +432,10 @@ func (ss *PbftServerMgr) runServer(server *serverInfo, id *big.Int) {
 			time.Sleep(time.Second)
 		}
 	}
+	if id.Int64() > 0 {
+		log.Info("[switch]", "leader wait ", 60)
+		time.Sleep(time.Second * ServerWait)
+	}
 
 	server.server.Start(ss.work)
 	// start to fetch
@@ -440,6 +445,18 @@ func (ss *PbftServerMgr) runServer(server *serverInfo, id *big.Int) {
 		Height: common.Big0,
 	}
 	server.server.ActionChan <- ac
+}
+
+func DelayStop(id *big.Int, ss *PbftServerMgr) {
+	log.Info("[switch]", "stop wait ", 60)
+	time.Sleep(time.Second * ServerWait)
+
+	if server, ok := ss.servers[id.Uint64()]; ok {
+		server.server.Node.Stop = true
+		server.server.Stop()
+		server.clear = true
+	}
+	ss.clear(id)
 }
 
 func (ss *PbftServerMgr) Notify(id *big.Int, action int) error {
@@ -452,12 +469,7 @@ func (ss *PbftServerMgr) Notify(id *big.Int, action int) error {
 			return errors.New("wrong conmmitt ID:" + id.String())
 		}
 	case Stop:
-		if server, ok := ss.servers[id.Uint64()]; ok {
-			server.server.Node.Stop = true
-			server.server.Stop()
-			server.clear = true
-		}
-		ss.clear(id)
+		DelayStop(id, ss)
 		return nil
 	case Switch:
 		// begin to make network..
