@@ -425,6 +425,7 @@ func (ss *PbftServerMgr) runServer(server *serverInfo, id *big.Int) {
 	if bytes.Equal(crypto.FromECDSAPub(server.leader), crypto.FromECDSAPub(ss.pk)) {
 		for {
 			b, _ := serverCheck(server)
+			log.Info("[leader]", "server count", b)
 			if b {
 				time.Sleep(time.Second * ServerWait)
 				break
