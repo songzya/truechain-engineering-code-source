@@ -10,7 +10,6 @@ import (
 	"github.com/truechain/truechain-engineering-code/core/types"
 	"github.com/truechain/truechain-engineering-code/crypto"
 	"github.com/truechain/truechain-engineering-code/crypto/sha3"
-	"github.com/truechain/truechain-engineering-code/log"
 	"github.com/truechain/truechain-engineering-code/pbftserver/consensus"
 	"github.com/truechain/truechain-engineering-code/pbftserver/lock"
 	"github.com/truechain/truechain-engineering-code/pbftserver/network"
@@ -378,7 +377,7 @@ func (ss *PbftServerMgr) PutCommittee(committeeInfo *types.CommitteeInfo) error 
 }
 func (ss *PbftServerMgr) PutNodes(id *big.Int, nodes []*types.CommitteeNode) error {
 	if nodes[0] != nil {
-		lock.PSLog("PutNodes", nodes[0].Port, nodes[0].IP)
+		lock.PSLog("PutNodes", nodes[0].Port, nodes[0].IP, "committee id", id.Int64())
 	} else {
 		lock.PSLog("PutNodes nodes error")
 	}
@@ -425,7 +424,7 @@ func (ss *PbftServerMgr) runServer(server *serverInfo, id *big.Int) {
 	if bytes.Equal(crypto.FromECDSAPub(server.leader), crypto.FromECDSAPub(ss.pk)) {
 		for {
 			b, _ := serverCheck(server)
-			log.Info("[leader]", "server count", b)
+			lock.PSLog("[leader]", "server count", b)
 			if b {
 				time.Sleep(time.Second * ServerWait)
 				break
@@ -434,7 +433,7 @@ func (ss *PbftServerMgr) runServer(server *serverInfo, id *big.Int) {
 		}
 	}
 	if id.Int64() > 0 {
-		log.Info("[switch]", "leader wait ", 60)
+		lock.PSLog("[switch]", "leader wait ", 60)
 		time.Sleep(time.Second * ServerWait)
 	}
 
@@ -449,7 +448,7 @@ func (ss *PbftServerMgr) runServer(server *serverInfo, id *big.Int) {
 }
 
 func DelayStop(id *big.Int, ss *PbftServerMgr) {
-	log.Info("[switch]", "stop wait ", 60)
+	lock.PSLog("[switch]", "stop wait ", 60)
 	time.Sleep(time.Second * ServerWait)
 
 	if server, ok := ss.servers[id.Uint64()]; ok {
