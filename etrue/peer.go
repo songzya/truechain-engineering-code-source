@@ -183,6 +183,10 @@ func (p *peer) broadcast() {
 				}
 			}
 
+			if len(txs) > 10 {
+				log.Warn("broadcast", "queuedTxs", len(p.queuedTxs), "Txs", len(ctxs), "txs", len(txs))
+			}
+
 			if err := p.SendTransactions(txs); err != nil {
 				return
 			}
