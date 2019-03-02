@@ -61,8 +61,8 @@ const (
 	fruitChanSize = 4096
 	// minimim number of peers to broadcast new blocks to
 	minBroadcastPeers = 4
-	txPackSize        = 10
-	fruitPackSize     = 3
+	txPackSize        = 5
+	fruitPackSize     = 2
 )
 
 // errIncompatibleConfig is returned if the requested protocols and configs are
@@ -1314,9 +1314,7 @@ func (pm *ProtocolManager) txBroadcastLoop() {
 
 			if len(pm.txsCh) > 0 && maxSize > 0 && len(txs) < txPackSize {
 				maxSize--
-				if maxSize%3 == 0 {
-					log.Info("txBroadcastLoop", "txsCh", len(pm.txsCh), "Txs", len(eventTx.Txs), "txs", len(txs))
-				}
+				log.Info("txBroadcastLoop", "txsCh", len(pm.txsCh), "Txs", len(eventTx.Txs), "txs", len(txs))
 				continue
 			}
 
@@ -1347,9 +1345,7 @@ func (pm *ProtocolManager) fruitBroadcastLoop() {
 
 			if len(pm.txsCh) > 0 && maxSize > 0 && len(fruits) < fruitPackSize {
 				maxSize--
-				if maxSize%2 == 0 {
-					log.Info("fruitBroadcastLoop", "fruitsch", len(pm.fruitsch), "Txs", len(fruitsEvent.Fruits), "txs", len(fruits))
-				}
+				log.Info("fruitBroadcastLoop", "fruitsch", len(pm.fruitsch), "Txs", len(fruitsEvent.Fruits), "txs", len(fruits))
 				continue
 			}
 
