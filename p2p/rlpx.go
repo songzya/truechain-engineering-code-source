@@ -27,6 +27,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/log"
 	"hash"
 	"io"
 	"io/ioutil"
@@ -598,6 +599,11 @@ func newRLPXFrameRW(conn io.ReadWriter, s secrets) *rlpxFrameRW {
 }
 
 func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
+	msgSize := msg.Size
+	now := time.Now()
+	if msgSize > 200 {
+		log.Debug("WriteMsg 00", "code", msg.Code, "size", msg.Code, "snappy", rw.snappy)
+	}
 	ptype, _ := rlp.EncodeToBytes(msg.Code)
 
 	// if snappy is enabled, compress message now
@@ -611,6 +617,10 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 		msg.Payload = bytes.NewReader(payload)
 		msg.Size = uint32(len(payload))
 	}
+	timeString := time.Now().Sub(now).String()
+	if msgSize > 200 {
+		log.Debug("WriteMsg 11", "ptype", ptype, "size", msg.Code, "timeString", timeString)
+	}
 	// write header
 	headbuf := make([]byte, 32)
 	fsize := uint32(len(ptype)) + msg.Size
@@ -621,12 +631,20 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 	copy(headbuf[3:], zeroHeader)
 	rw.enc.XORKeyStream(headbuf[:16], headbuf[:16]) // first half is now encrypted
 
+	timeString = time.Now().Sub(now).String()
+	if msgSize > 200 {
+		log.Debug("WriteMsg 22", "ptype", ptype, "headbuf", len(headbuf), "timeString", timeString)
+	}
+
 	// write header MAC
 	copy(headbuf[16:], updateMAC(rw.egressMAC, rw.macCipher, headbuf[:16]))
 	if _, err := rw.conn.Write(headbuf); err != nil {
 		return err
 	}
-
+	timeString = time.Now().Sub(now).String()
+	if msgSize > 200 {
+		log.Debug("WriteMsg 33", "ptype", ptype, "headbuf", len(headbuf), "timeString", timeString)
+	}
 	// write encrypted frame, updating the egress MAC hash with
 	// the data written to conn.
 	tee := cipher.StreamWriter{S: rw.enc, W: io.MultiWriter(rw.conn, rw.egressMAC)}
@@ -641,12 +659,20 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 			return err
 		}
 	}
-
+	timeString = time.Now().Sub(now).String()
+	if msgSize > 200 {
+		log.Debug("WriteMsg 44", "padding", ptype, "headbuf", len(headbuf), "timeString", timeString)
+	}
 	// write frame MAC. egress MAC hash is up to date because
 	// frame content was written to it as well.
 	fmacseed := rw.egressMAC.Sum(nil)
 	mac := updateMAC(rw.egressMAC, rw.macCipher, fmacseed)
 	_, err := rw.conn.Write(mac)
+
+	timeString = time.Now().Sub(now).String()
+	if msgSize > 200 {
+		log.Debug("WriteMsg 55", "fmacseed", len(fmacseed), "mac", len(mac), "timeString", timeString, "err", err)
+	}
 	return err
 }
 
