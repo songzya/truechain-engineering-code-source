@@ -27,7 +27,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/truechain/truechain-engineering-code/consensus/tbft/help"
 	"hash"
 	"io"
 	"io/ioutil"
@@ -40,6 +39,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/golang/snappy"
 	"golang.org/x/crypto/sha3"
@@ -599,10 +599,9 @@ func newRLPXFrameRW(conn io.ReadWriter, s secrets) *rlpxFrameRW {
 }
 
 func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
-	watch := help.NewTWatch(1, fmt.Sprintf("msgcode: %d data: %d, %t tcp Send 11", msg.Code, msg.Size, rw.snappy))
+	wbegin := time.Now()
 
 	ptype, _ := rlp.EncodeToBytes(msg.Code)
-
 	// if snappy is enabled, compress message now
 	if rw.snappy {
 		if msg.Size > maxUint24 {
@@ -614,7 +613,11 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 		msg.Payload = bytes.NewReader(payload)
 		msg.Size = uint32(len(payload))
 	}
+	if d := time.Now().Sub(wbegin); d.Seconds() > 1 {
+		log.Error("1 ++txTest++", "snappy", d.Seconds())
+	}
 
+	wbegin = time.Now()
 	// write header
 	headbuf := make([]byte, 32)
 	fsize := uint32(len(ptype)) + msg.Size
@@ -630,11 +633,11 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 	if _, err := rw.conn.Write(headbuf); err != nil {
 		return err
 	}
-	watch.EndWatch()
-	watch.Finish(fmt.Sprintf("end  headbuf: %d  fsize: %d", len(headbuf), fsize))
+	if d := time.Now().Sub(wbegin); d.Seconds() > 1 {
+		log.Error("2 ++txTest++", "write_head", d.Seconds())
+	}
 
-	watch = help.NewTWatch(1, fmt.Sprintf("msgcode: %d data: %d, %t tcp Send 22", msg.Code, msg.Size, rw.snappy))
-
+	wbegin = time.Now()
 	// write encrypted frame, updating the egress MAC hash with
 	// the data written to conn.
 	tee := cipher.StreamWriter{S: rw.enc, W: io.MultiWriter(rw.conn, rw.egressMAC)}
@@ -653,10 +656,15 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 	// frame content was written to it as well.
 	fmacseed := rw.egressMAC.Sum(nil)
 	mac := updateMAC(rw.egressMAC, rw.macCipher, fmacseed)
-	_, err := rw.conn.Write(mac)
+	if d := time.Now().Sub(wbegin); d.Seconds() > 1 {
+		log.Error("3 ++txTest++", "encrypted", d.Seconds())
+	}
 
-	watch.EndWatch()
-	watch.Finish(fmt.Sprintf("end  mac: %d  fsize: %d", len(mac), fsize))
+	wbegin = time.Now()
+	_, err := rw.conn.Write(mac)
+	if d := time.Now().Sub(wbegin); d.Seconds() > 1 {
+		log.Error("4 ++txTest++", "conn_write", d.Seconds())
+	}
 	return err
 }
 
