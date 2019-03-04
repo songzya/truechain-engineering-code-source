@@ -1313,17 +1313,17 @@ func (pm *ProtocolManager) txBroadcastLoop() {
 			}
 
 			if len(pm.txsCh) > 0 && len(txs) < txPackSize {
-				log.Info("txBroadcastLoop", "txsCh", len(pm.txsCh), "Txs", len(eventTx.Txs), "txs", len(txs))
+				log.Info("txBroadcastLoop 00", "txsCh", len(pm.txsCh), "Txs", len(eventTx.Txs), "txs", len(txs))
 				continue
 			}
 
 			if len(txs) > txPackSize*2 {
-				log.Warn("txBroadcastLoop", "txsCh", len(pm.txsCh), "Txs", len(eventTx.Txs), "txs", len(txs))
+				log.Warn("txBroadcastLoop 11", "txsCh", len(pm.txsCh), "Txs", len(eventTx.Txs), "txs", len(txs))
 			}
 
 			pm.BroadcastTxs(txs)
 			txs = append(txs[:0], txs[1:]...)
-
+			log.Warn("txBroadcastLoop 22", "txsCh", len(pm.txsCh), "Txs", len(eventTx.Txs), "txs", len(txs))
 			// Err() channel will be closed when unsubscribing.
 		case <-pm.txsSub.Err():
 			return
@@ -1345,11 +1345,11 @@ func (pm *ProtocolManager) fruitBroadcastLoop() {
 			}
 
 			if len(pm.txsCh) > 0 && len(fruits) < fruitPackSize {
-				log.Info("fruitBroadcastLoop", "fruitsch", len(pm.fruitsch), "Txs", len(fruitsEvent.Fruits), "txs", len(fruits))
+				log.Info("fruitBroadcastLoop", "fruitsch", len(pm.fruitsch), "Fts", len(fruitsEvent.Fruits), "fts", len(fruits))
 				continue
 			}
 			if len(fruits) > fruitPackSize*2 {
-				log.Warn("txBroadcastLoop", "txsCh", len(pm.txsCh), "Txs", len(fruitsEvent.Fruits), "txs", len(fruits))
+				log.Warn("fruitBroadcastLoop", "fruitsch", len(pm.txsCh), "Fts", len(fruitsEvent.Fruits), "fts", len(fruits))
 			}
 			pm.BroadcastFruits(fruitsEvent.Fruits)
 			fruits = append(fruits[:0], fruits[1:]...)
