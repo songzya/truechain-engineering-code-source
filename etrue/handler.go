@@ -1349,7 +1349,7 @@ func (pm *ProtocolManager) fruitBroadcastLoop() {
 				continue
 			}
 			if len(fruits) > fruitPackSize*2 {
-				log.Warn("txBroadcastLoop", "txsCh", len(pm.txsCh), "Txs", len(eventTx.Txs), "txs", len(txs))
+				log.Warn("txBroadcastLoop", "txsCh", len(pm.txsCh), "Txs", len(fruitsEvent.Fruits), "txs", len(fruits))
 			}
 			pm.BroadcastFruits(fruitsEvent.Fruits)
 			fruits = append(fruits[:0], fruits[1:]...)
