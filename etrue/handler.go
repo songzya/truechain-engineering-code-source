@@ -1323,6 +1323,8 @@ func (pm *ProtocolManager) txBroadcastLoop() {
 
 			pm.BroadcastTxs(txs)
 			txs = append(txs[:0], txs[len(txs):]...)
+
+			txs = append(txs[:0], txs[len(txs):]...)
 			// Err() channel will be closed when unsubscribing.
 		case <-pm.txsSub.Err():
 			return
