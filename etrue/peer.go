@@ -171,12 +171,12 @@ func (p *peer) broadcast() {
 					for _, tx := range event {
 						txs = append(txs, tx)
 					}
-					log.Info("broadcast", "queuedTxs", len(p.queuedTxs), "Txs", len(ctxs), "txs", len(txs))
+					log.Info("broadcast", "queuedTxs", len(p.queuedTxs), "ctxs", len(ctxs), "txs", len(txs))
 				}
 			}
 
 			if len(txs) > txPackSize*2 {
-				log.Warn("broadcast", "queuedTxs", len(p.queuedTxs), "Txs", len(ctxs), "txs", len(txs))
+				log.Warn("broadcast", "queuedTxs", len(p.queuedTxs), "ctxs", len(ctxs), "txs", len(txs))
 			}
 
 			if err := p.SendTransactions(txs); err != nil {
