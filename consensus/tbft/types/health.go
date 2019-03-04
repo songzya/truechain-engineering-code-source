@@ -7,9 +7,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/truechain/truechain-engineering-code/params"
 	"github.com/truechain/truechain-engineering-code/consensus/tbft/help"
 	"github.com/truechain/truechain-engineering-code/consensus/tbft/tp2p"
 	ctypes "github.com/truechain/truechain-engineering-code/core/types"
+	"math/big"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,8 +20,7 @@ import (
 const (
 	//HealthOut peer time out
 	HealthOut = 1200
-	//MixValidator min committee count
-	MixValidator   = 2
+
 	BlackDoorCount = 4
 
 	SwitchPartWork = 0
@@ -332,7 +333,7 @@ func (h *HealthMgr) makeSwitchValidators(remove, add *Health, resion string, fro
 	})
 	// will need check vals with validatorSet
 	infos := &ctypes.SwitchInfos{
-		CID:         h.cid,
+		CID:         new(big.Int).SetUint64(h.cid),
 		Vals:        vals,
 		Members:     nil,
 		BackMembers: nil,
@@ -368,7 +369,7 @@ func (h *HealthMgr) isShiftSV() (bool, int) {
 			cnt++
 		}
 	}
-	return cnt > MixValidator, cnt
+	return cnt > params.MinimumCommitteeNumber, cnt
 }
 
 //switchResult handle the sv after consensus and the result removed from self
