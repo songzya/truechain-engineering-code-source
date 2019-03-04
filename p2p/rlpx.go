@@ -27,6 +27,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/log"
 	"hash"
 	"io"
 	"io/ioutil"
@@ -39,7 +40,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/golang/snappy"
 	"golang.org/x/crypto/sha3"
@@ -602,6 +602,7 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 	wbegin := time.Now()
 
 	ptype, _ := rlp.EncodeToBytes(msg.Code)
+
 	// if snappy is enabled, compress message now
 	if rw.snappy {
 		if msg.Size > maxUint24 {
@@ -614,7 +615,7 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 		msg.Size = uint32(len(payload))
 	}
 	if d := time.Now().Sub(wbegin); d.Seconds() > 1 {
-		log.Error("1 ++txTest++", "snappy", d.Seconds())
+		log.Error("1 ++txTest++", "code", msg.Code, "size", msg.Size, "snappy", rw.snappy, "second", d.Seconds())
 	}
 
 	wbegin = time.Now()
@@ -634,7 +635,7 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 		return err
 	}
 	if d := time.Now().Sub(wbegin); d.Seconds() > 1 {
-		log.Error("2 ++txTest++", "write_head", d.Seconds())
+		log.Error("2 ++txTest++", "code", msg.Code, "size", msg.Size, "headbuf", len(headbuf), "write_head", d.Seconds())
 	}
 
 	wbegin = time.Now()
@@ -652,18 +653,19 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 			return err
 		}
 	}
+
 	// write frame MAC. egress MAC hash is up to date because
 	// frame content was written to it as well.
 	fmacseed := rw.egressMAC.Sum(nil)
 	mac := updateMAC(rw.egressMAC, rw.macCipher, fmacseed)
 	if d := time.Now().Sub(wbegin); d.Seconds() > 1 {
-		log.Error("3 ++txTest++", "encrypted", d.Seconds())
+		log.Error("3 ++txTest++", "code", msg.Code, "size", msg.Size, "mac", len(mac), "encrypted", d.Seconds())
 	}
 
 	wbegin = time.Now()
 	_, err := rw.conn.Write(mac)
 	if d := time.Now().Sub(wbegin); d.Seconds() > 1 {
-		log.Error("4 ++txTest++", "conn_write", d.Seconds())
+		log.Error("4 ++txTest++", "code", msg.Code, "size", msg.Size, "conn_write", d.Seconds())
 	}
 	return err
 }

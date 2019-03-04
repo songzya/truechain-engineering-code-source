@@ -1301,8 +1301,7 @@ func (pm *ProtocolManager) minedSnailBlockLoop() {
 }
 func (pm *ProtocolManager) txBroadcastLoop() {
 	var (
-		txs     = make([]*types.Transaction, 0, txPackSize)
-		maxSize = txPackSize
+		txs = make([]*types.Transaction, 0, txPackSize)
 	)
 
 	for {
@@ -1313,14 +1312,16 @@ func (pm *ProtocolManager) txBroadcastLoop() {
 				txs = append(txs, tx)
 			}
 
-			if len(pm.txsCh) > 0 && maxSize > 0 && len(txs) < txPackSize {
-				maxSize--
+			if len(pm.txsCh) > 0 && len(txs) < txPackSize {
 				log.Info("txBroadcastLoop", "txsCh", len(pm.txsCh), "Txs", len(eventTx.Txs), "txs", len(txs))
 				continue
 			}
 
+			if len(txs) > txPackSize*2 {
+				log.Warn("txBroadcastLoop", "txsCh", len(pm.txsCh), "Txs", len(eventTx.Txs), "txs", len(txs))
+			}
+
 			pm.BroadcastTxs(txs)
-			maxSize = txPackSize
 			txs = append(txs[:0], txs[1:]...)
 
 			// Err() channel will be closed when unsubscribing.
@@ -1333,8 +1334,7 @@ func (pm *ProtocolManager) txBroadcastLoop() {
 //  fruits
 func (pm *ProtocolManager) fruitBroadcastLoop() {
 	var (
-		fruits  = make([]*types.SnailBlock, 0, fruitPackSize)
-		maxSize = fruitPackSize
+		fruits = make([]*types.SnailBlock, 0, fruitPackSize)
 	)
 
 	for {
@@ -1344,14 +1344,14 @@ func (pm *ProtocolManager) fruitBroadcastLoop() {
 				fruits = append(fruits, fruit)
 			}
 
-			if len(pm.txsCh) > 0 && maxSize > 0 && len(fruits) < fruitPackSize {
-				maxSize--
+			if len(pm.txsCh) > 0 && len(fruits) < fruitPackSize {
 				log.Info("fruitBroadcastLoop", "fruitsch", len(pm.fruitsch), "Txs", len(fruitsEvent.Fruits), "txs", len(fruits))
 				continue
 			}
-
+			if len(fruits) > fruitPackSize*2 {
+				log.Warn("txBroadcastLoop", "txsCh", len(pm.txsCh), "Txs", len(eventTx.Txs), "txs", len(txs))
+			}
 			pm.BroadcastFruits(fruitsEvent.Fruits)
-			maxSize = fruitPackSize
 			fruits = append(fruits[:0], fruits[1:]...)
 
 			// Err() channel will be closed when unsubscribing.
