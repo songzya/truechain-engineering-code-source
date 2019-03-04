@@ -1323,7 +1323,6 @@ func (pm *ProtocolManager) txBroadcastLoop() {
 
 			pm.BroadcastTxs(txs)
 			txs = append(txs[:0], txs[len(txs):]...)
-			log.Warn("txBroadcastLoop 22", "txsCh", len(pm.txsCh), "Txs", len(eventTx.Txs), "txs", len(txs))
 			// Err() channel will be closed when unsubscribing.
 		case <-pm.txsSub.Err():
 			return
