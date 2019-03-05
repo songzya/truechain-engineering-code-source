@@ -674,6 +674,11 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 // whitelisted, preventing any associated transaction from being dropped out of
 // the pool due to pricing constraints.
 func (pool *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
+	watch := help.NewTWatch(2, fmt.Sprintf("handleMsg add TxPool: %d txs: %t", len(pool.newTxsCh), local))
+	defer func() {
+		watch.EndWatch()
+		watch.Finish(fmt.Sprintf("end   Count: %d", pool.all.Count()))
+	}()
 	// If the transaction is already known, discard it
 	hash := tx.Hash()
 	if pool.all.Get(hash) != nil {
@@ -890,7 +895,7 @@ func (pool *TxPool) addTx(tx *types.Transaction, local bool) error {
 // addTxs attempts to queue a batch of transactions if they are valid.
 func (pool *TxPool) addTxs(txs []*types.Transaction, local bool, mark string) []error {
 
-	watch := help.NewTWatch(3, fmt.Sprintf("handleMsg addTxs newTxsCh: %d txs: %d", len(pool.newTxsCh), len(txs)))
+	watch := help.NewTWatch(2, fmt.Sprintf("handleMsg addTxs newTxsCh: %d txs: %d", len(pool.newTxsCh), len(txs)))
 	defer func() {
 		watch.EndWatch()
 		watch.Finish(fmt.Sprintf("end   mark: %s", mark))
@@ -1002,7 +1007,11 @@ func (pool *TxPool) removeTx(hash common.Hash, outofbound bool) {
 func (pool *TxPool) promoteExecutables(accounts []common.Address) {
 	// Track the promoted transactions to broadcast them at once
 	var promoted []*types.Transaction
-
+	watch := help.NewTWatch(2, fmt.Sprintf("handleMsg promoteExecutables TxPool: %d accounts: %d", len(pool.newTxsCh), len(accounts)))
+	defer func() {
+		watch.EndWatch()
+		watch.Finish(fmt.Sprintf("end   Count: %d  promoted: %d", pool.all.Count(), len(promoted)))
+	}()
 	// Gather all the accounts potentially needing updates
 	if accounts == nil {
 		accounts = make([]common.Address, 0, len(pool.queue))

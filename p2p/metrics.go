@@ -25,11 +25,10 @@ import (
 	"sync/atomic"
 	"time"
 
-
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/truechain/truechain-engineering-code/event"
 	"github.com/truechain/truechain-engineering-code/metrics"
 	"github.com/truechain/truechain-engineering-code/p2p/enode"
-	"github.com/truechain/truechain-engineering-code/event"
 )
 
 const (
@@ -148,6 +147,7 @@ func (c *meteredConn) Read(b []byte) (n int, err error) {
 // and the peer egress traffic meters along the way.
 func (c *meteredConn) Write(b []byte) (n int, err error) {
 	n, err = c.Conn.Write(b)
+	log.Debug("Write", "Write", len(b), "n", n, "c", c.RemoteAddr())
 	egressTrafficMeter.Mark(int64(n))
 	c.lock.RLock()
 	if c.trafficMetered {
