@@ -175,8 +175,8 @@ func (p *peer) broadcast() {
 				}
 			}
 
-			if len(txs) > txPackSize*2 {
-				log.Warn("broadcast", "queuedTxs", len(p.queuedTxs), "ctxs", len(ctxs), "txs", len(txs))
+			if len(txs) > txPackSize*3 {
+				log.Warn("broadcast", "queuedTxs", len(p.queuedTxs), "Txs", len(ctxs), "txs", len(txs))
 			}
 
 			if err := p.SendTransactions(txs); err != nil {
@@ -200,6 +200,9 @@ func (p *peer) broadcast() {
 
 		//add for fruit
 		case fruits := <-p.queuedFruits:
+			if len(fruits) > fruitPackSize*2 {
+				log.Warn("broadcast", "queuedFruits", len(p.queuedFruits), "fxs", len(fruits))
+			}
 			if err := p.SendFruits(fruits); err != nil {
 				return
 			}
