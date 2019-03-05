@@ -24,6 +24,7 @@ import (
 	"math/big"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -244,9 +245,10 @@ type TxPool struct {
 	all     *txLookup                    // All transactions to allow lookups
 	priced  *txPricedList                // All transactions sorted by price
 
-	newTxsCh  chan []*types.Transaction
-	wg        sync.WaitGroup // for shutdown sync
-	rpcTxslen *big.Int
+	newTxsCh    chan []*types.Transaction
+	wg          sync.WaitGroup // for shutdown sync
+	rpcTxslen   *big.Int
+	remoteTxlen atomic.Value
 }
 
 // NewTxPool creates a new transaction pool to gather, sort and filter inbound
@@ -290,6 +292,7 @@ func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain block
 	pool.chainHeadSub = pool.chain.SubscribeChainHeadEvent(pool.chainHeadCh)
 
 	pool.rpcTxslen = new(big.Int).SetInt64(0)
+	pool.remoteTxlen.Store(0)
 
 	// Start the event loop and return
 	pool.wg.Add(1)
@@ -864,8 +867,15 @@ func (pool *TxPool) AddLocals(txs []*types.Transaction) []error {
 // will apply.
 func (pool *TxPool) AddRemotes(txs []*types.Transaction) []error {
 	errs := make([]error, len(txs))
+	lenTx := pool.remoteTxlen.Load().(uint64) + 1
+	if lenTx%1000 == 0 {
+		log.Warn("AddRemotes", "txs", len(txs), "newTxsCh", len(pool.newTxsCh))
+	}
+	pool.remoteTxlen.Store(lenTx)
 	select {
 	case pool.newTxsCh <- txs:
+		lenTx = pool.remoteTxlen.Load().(uint64) - 1
+		pool.remoteTxlen.Store(lenTx)
 		return nil
 		/*default:
 		remoteTxsDiscardCount = remoteTxsDiscardCount.Add(remoteTxsDiscardCount, big.NewInt(int64(len(txs))))
