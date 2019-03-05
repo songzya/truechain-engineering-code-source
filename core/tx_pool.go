@@ -292,7 +292,7 @@ func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain block
 	pool.chainHeadSub = pool.chain.SubscribeChainHeadEvent(pool.chainHeadCh)
 
 	pool.rpcTxslen = new(big.Int).SetInt64(0)
-	pool.remoteTxlen.Store(0)
+	pool.remoteTxlen.Store(uint64(0))
 
 	// Start the event loop and return
 	pool.wg.Add(1)
