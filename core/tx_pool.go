@@ -869,7 +869,7 @@ func (pool *TxPool) AddRemotes(txs []*types.Transaction) []error {
 	errs := make([]error, len(txs))
 	lenTx := pool.remoteTxlen.Load().(uint64) + 1
 	if lenTx%1000 == 0 {
-		log.Warn("AddRemotes", "txs", len(txs), "newTxsCh", len(pool.newTxsCh))
+		log.Warn("AddRemotes", "txs", len(txs), "newTxsCh", len(pool.newTxsCh), "lenTx", lenTx)
 	}
 	pool.remoteTxlen.Store(lenTx)
 	select {
