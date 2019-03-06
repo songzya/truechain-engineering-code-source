@@ -27,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
@@ -529,7 +528,6 @@ type TransactionsByPriceAndNonce struct {
 // if after providing it to the constructor.
 func NewTransactionsByPriceAndNonce(signer Signer, txs map[common.Address]Transactions) *TransactionsByPriceAndNonce {
 	// Initialize a price based heap with the head transactions
-	log.Info("go into NewTransactionsByPriceAndNonce")
 	heads := make(TxByPrice, 0, len(txs))
 	for from, accTxs := range txs {
 		heads = append(heads, accTxs[0])
