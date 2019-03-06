@@ -149,7 +149,7 @@ func (c *meteredConn) Read(b []byte) (n int, err error) {
 func (c *meteredConn) Write(b []byte) (n int, err error) {
 	watch := help.NewTWatch(3, fmt.Sprintf("ip: %s, tcp Send", c.RemoteAddr()))
 	n, err = c.Conn.Write(b)
-	log.Trace("Write", "Write", len(b), "n", n, "c", c.RemoteAddr())
+	log.Debug("Write", "Write", len(b), "n", n, "c", c.RemoteAddr())
 	egressTrafficMeter.Mark(int64(n))
 	c.lock.RLock()
 	if c.trafficMetered {
