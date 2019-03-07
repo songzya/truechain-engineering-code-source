@@ -600,7 +600,11 @@ func newRLPXFrameRW(conn io.ReadWriter, s secrets) *rlpxFrameRW {
 
 func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 	wbegin := time.Now()
-
+	log.Debug("WriteMsg", "code", msg.Code, "size", msg.Size)
+	print := false
+	if msg.Size > 1 {
+		print = true
+	}
 	ptype, _ := rlp.EncodeToBytes(msg.Code)
 
 	// if snappy is enabled, compress message now
@@ -617,7 +621,9 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 	if d := time.Now().Sub(wbegin); d.Seconds() > 1 {
 		log.Error("1 ++txTest++", "code", msg.Code, "size", msg.Size, "snappy", rw.snappy, "second", d.Seconds())
 	} else {
-		log.Debug("1 ++txTest++", "code", msg.Code, "size", msg.Size, "ptype", len(ptype), "snappy", rw.snappy, "second", d.Seconds())
+		if print {
+			log.Debug("1 ++txTest++", "code", msg.Code, "size", msg.Size, "ptype", len(ptype), "snappy", rw.snappy, "second", d.Seconds())
+		}
 	}
 
 	wbegin = time.Now()
@@ -639,7 +645,9 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 	if d := time.Now().Sub(wbegin); d.Seconds() > 1 {
 		log.Error("2 ++txTest++", "code", msg.Code, "size", msg.Size, "headbuf", len(headbuf), "write_head", d.Seconds())
 	} else {
-		log.Debug("2 ++txTest++", "code", msg.Code, "size", msg.Size, "headbuf", len(headbuf), "write_head", d.Seconds())
+		if print {
+			log.Debug("2 ++txTest++", "code", msg.Code, "size", msg.Size, "headbuf", len(headbuf), "write_head", d.Seconds())
+		}
 	}
 
 	wbegin = time.Now()
@@ -649,7 +657,9 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 	if _, err := tee.Write(ptype); err != nil {
 		return err
 	}
-	log.Debug("2 ++11txTest++", "code", msg.Code, "size", msg.Size, "ptype", len(ptype), "write_head", time.Now().Sub(wbegin).Seconds())
+	if print {
+		log.Debug("2 ++11txTest++", "code", msg.Code, "size", msg.Size, "ptype", len(ptype), "write_head", time.Now().Sub(wbegin).Seconds())
+	}
 	if _, err := io.Copy(tee, msg.Payload); err != nil {
 		return err
 	}
@@ -657,7 +667,9 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 		if _, err := tee.Write(zero16[:16-padding]); err != nil {
 			return err
 		}
-		log.Debug("2 ++22txTest++", "code", msg.Code, "size", msg.Size, "padding", padding, "zero16", len(zero16[:16-padding]), "write_head", time.Now().Sub(wbegin).Seconds())
+		if print {
+			log.Debug("2 ++22txTest++", "code", msg.Code, "size", msg.Size, "padding", padding, "zero16", len(zero16[:16-padding]), "write_head", time.Now().Sub(wbegin).Seconds())
+		}
 	}
 
 	// write frame MAC. egress MAC hash is up to date because
@@ -667,7 +679,9 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 	if d := time.Now().Sub(wbegin); d.Seconds() > 1 {
 		log.Error("3 ++txTest++", "code", msg.Code, "size", msg.Size, "mac", len(mac), "encrypted", d.Seconds())
 	} else {
-		log.Debug("3 ++txTest++", "code", msg.Code, "size", msg.Size, "mac", len(mac), "fmacseed", len(fmacseed), "encrypted", d.Seconds())
+		if print {
+			log.Debug("3 ++txTest++", "code", msg.Code, "size", msg.Size, "mac", len(mac), "fmacseed", len(fmacseed), "encrypted", d.Seconds())
+		}
 	}
 
 	wbegin = time.Now()
@@ -675,7 +689,9 @@ func (rw *rlpxFrameRW) WriteMsg(msg Msg) error {
 	if d := time.Now().Sub(wbegin); d.Seconds() > 1 {
 		log.Error("4 ++txTest++", "code", msg.Code, "size", msg.Size, "conn_write", d.Seconds())
 	} else {
-		log.Debug("4 ++txTest++", "code", msg.Code, "size", msg.Size, "conn_write", d.Seconds())
+		if print {
+			log.Debug("4 ++txTest++", "code", msg.Code, "size", msg.Size, "conn_write", d.Seconds())
+		}
 	}
 	return err
 }
