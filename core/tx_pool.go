@@ -87,6 +87,8 @@ var (
 	// transaction with a negative value.
 	ErrNegativeValue = errors.New("negative value")
 
+	ErrNegativeFee = errors.New("negative fee")
+
 	// ErrOversizedData is returned if the input data of a transaction is greater
 	// than some meaningful limit a user might use. This is not a consensus error
 	// making the transaction invalid, rather a DOS protection.
@@ -457,14 +459,16 @@ func (pool *TxPool) reset(oldHead, newHead *types.Header) {
 	if newHead == nil {
 		newHead = pool.chain.CurrentBlock().Header() // Special case during testing
 	}
-	statedb, err := pool.chain.StateAt(newHead.Root)
+	//statedb, err := pool.chain.StateAt(newHead.Root)
+	statedb, err := pool.chain.StateAt(pool.chain.CurrentBlock().Header().Root)
 	if err != nil {
 		log.Error("Failed to reset txpool state", "number", newHead.Number, "err", err)
 		return
 	}
 	pool.currentState = statedb
 	pool.pendingState = state.ManageState(statedb)
-	pool.currentMaxGas = newHead.GasLimit
+	//pool.currentMaxGas = newHead.GasLimit
+	pool.currentMaxGas = pool.chain.CurrentBlock().Header().GasLimit
 
 	// Inject any transactions discarded due to reorgs
 	log.Debug("Reinjecting stale transactions", "count", len(reinject))
@@ -618,6 +622,9 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	// transactions but may occur if you create a transaction using the RPC.
 	if tx.Value().Sign() < 0 {
 		return ErrNegativeValue
+	}
+	if tx.Fee() != nil && tx.Fee().Sign() < 0 {
+		return ErrNegativeFee
 	}
 	// Ensure the transaction doesn't exceed the current block limit gas.
 	if pool.currentMaxGas < tx.Gas() {

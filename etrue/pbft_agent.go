@@ -406,11 +406,15 @@ func (agent *PbftAgent) loop() {
 				flag := agent.getMemberFlagFromCommittee(receivedCommitteeInfo)
 				// flag : used  start  removed  stop
 				if flag == types.StateRemovedFlag {
+					agent.isCurrentCommitteeMember = false
 					help.CheckAndPrintError(agent.server.Notify(committeeID, int(types.CommitteeStop)))
 					agent.stopSend()
 				} else if flag == types.StateUsedFlag {
+					agent.isCurrentCommitteeMember = true
 					help.CheckAndPrintError(agent.server.Notify(committeeID, int(types.CommitteeStart)))
 					help.CheckAndPrintError(agent.server.UpdateCommittee(receivedCommitteeInfo))
+				} else {
+					agent.isCurrentCommitteeMember = false
 				}
 			case types.CommitteeOver:
 				committeeID := copyCommitteeID(ch.CommitteeID)
@@ -798,15 +802,7 @@ func (agent *PbftAgent) validateBlockSpace(header *types.Header) error {
 
 //generate rewardSnailHegiht
 func (agent *PbftAgent) rewardSnailBlock(header *types.Header) {
-	var (
-		rewardSnailHegiht *big.Int
-		blockReward       = agent.fastChain.CurrentReward()
-	)
-	if blockReward == nil {
-		rewardSnailHegiht = new(big.Int).Set(common.Big1)
-	} else {
-		rewardSnailHegiht = new(big.Int).Add(blockReward.SnailNumber, common.Big1)
-	}
+	rewardSnailHegiht := agent.fastChain.NextSnailNumberReward()
 	space := new(big.Int).Sub(agent.snailChain.CurrentBlock().Number(), rewardSnailHegiht).Int64()
 	if space >= params.SnailConfirmInterval.Int64() {
 		header.SnailNumber = rewardSnailHegiht
@@ -814,7 +810,7 @@ func (agent *PbftAgent) rewardSnailBlock(header *types.Header) {
 		if sb != nil {
 			header.SnailHash = sb.Hash()
 		} else {
-			log.Error("cannot find snailBlock by rewardSnailHegiht.")
+			log.Error("cannot find snailBlock by rewardSnailHegiht.", "snailHeight", rewardSnailHegiht.Uint64())
 		}
 	}
 }
@@ -874,7 +870,12 @@ func (agent *PbftAgent) VerifyFastBlock(fb *types.Block, result bool) (*types.Pb
 		}
 		return voteSign, err
 	}
+	err = agent.verifyRewardInCommittee(fb)
+	if err != nil {
+		return nil, err
+	}
 	err = bc.Validator().ValidateBody(fb, false)
+
 	if err != nil {
 		// if return blockAlready kown ,indicate block already insert chain by fetch
 		if err == core.ErrKnownBlock && agent.fastChain.CurrentBlock().Number().Cmp(fb.Number()) >= 0 {
@@ -929,6 +930,20 @@ func (agent *PbftAgent) VerifyFastBlock(fb *types.Block, result bool) (*types.Pb
 		return nil, signError
 	}
 	return voteSign, nil
+}
+
+func (agent *PbftAgent) verifyRewardInCommittee(fb *types.Block) error {
+	if fb.SnailNumber() != nil && fb.SnailNumber().Uint64() != 0 {
+		supposedRewardedNumber := agent.fastChain.NextSnailNumberReward()
+		currentSnailBlock := agent.snailChain.CurrentBlock().Number()
+		space := new(big.Int).Sub(currentSnailBlock, supposedRewardedNumber).Int64()
+		if space < params.SnailConfirmInterval.Int64() {
+			log.Error("validateRewardError", "currentSnailNumber", agent.snailChain.CurrentBlock().Number(),
+				"supposedRewardedNumber", supposedRewardedNumber, "space", space, "err", core.ErrSnailNumberRewardTooFast)
+			return core.ErrSnailNumberRewardTooFast
+		}
+	}
+	return nil
 }
 
 //BroadcastConsensus  when More than 2/3 signs with agree,

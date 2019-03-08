@@ -378,6 +378,9 @@ func (e *Election) VerifySigns(signs []*types.PbftSign) ([]*types.CommitteeMembe
 
 // VerifySwitchInfo verify committee members and it's state
 func (e *Election) VerifySwitchInfo(fastNumber *big.Int, info []*types.CommitteeMember) error {
+	if e.singleNode == true {
+		return nil
+	}
 	committee := e.electedCommittee(fastNumber)
 	if committee == nil {
 		log.Error("Failed to fetch elected committee", "fast", fastNumber)
@@ -519,7 +522,6 @@ func (e *Election) getCommittee(fastNumber *big.Int, snailNumber *big.Int) *comm
 		if preEndFast == nil {
 			return nil
 		}
-
 
 		log.Debug("get committee", "electFirst", preBeginElectionNumber, "electLast", preEndElectionNumber, "lastFast", preEndFast)
 
@@ -1078,6 +1080,19 @@ func (e *Election) Start() error {
 			rawdb.WriteCommitteeStates(e.snailchain.GetDatabase(), currentCommittee.id.Uint64(), currentCommittee.switches)
 			break
 		}
+	}
+	switchNum := new(big.Int).Add(currentCommittee.beginFastNumber, common.Big1)
+	if len(currentCommittee.switches) > 0 {
+		switchNum = new(big.Int).Add(currentCommittee.switches[len(currentCommittee.switches)-1], common.Big1)
+	}
+	for switchNum.Cmp(fastHeadNumber) <= 0 {
+		block := e.fastchain.GetBlockByNumber(switchNum.Uint64())
+		if block != nil && len(block.SwitchInfos()) > 0 {
+			log.Info("Election append switch block height", "number", switchNum)
+			currentCommittee.switches = append(currentCommittee.switches, switchNum)
+			rawdb.WriteCommitteeStates(e.snailchain.GetDatabase(), currentCommittee.id.Uint64(), currentCommittee.switches)
+		}
+		switchNum = new(big.Int).Add(switchNum, common.Big1)
 	}
 
 	e.committee = currentCommittee
