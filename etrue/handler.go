@@ -594,7 +594,6 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 
 	case msg.Code == GetFastBlockHeadersMsg:
 
-		log.Debug("GetFastBlockHeadersMsg", "peer", p.id)
 		// Decode the complex header query
 		var query getBlockHeadersData
 		if err := msg.Decode(&query); err != nil {
@@ -603,6 +602,8 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		hashMode := query.Origin.Hash != (common.Hash{})
 		first := true
 		maxNonCanonical := uint64(100)
+
+		log.Debug("GetFastBlockHeadersMsg", "peer", p.id, "call", query.call, "")
 
 		// Gather headers until the fetch or network limits is reached
 		var (

@@ -171,15 +171,13 @@ type getBlockHeadersData struct {
 	Amount  uint64       // Maximum number of headers to retrieve
 	Skip    uint64       // Blocks to skip between consecutive headers
 	Reverse bool         // Query direction (false = rising towards latest, true = falling towards genesis)
-	call    string
+	call    uint64
 }
-
-type Headers []*types.Header
 
 // BlockHeadersData represents a block header send.
 type BlockHeadersData struct {
-	headers Headers
-	call    string
+	headers []*types.Header
+	call    uint64
 }
 
 // hashOrNumber is a combined field for specifying an origin block.
@@ -232,15 +230,13 @@ type newSnailBlockData struct {
 // getBlockBodiesData represents a block body query.
 type getBlockBodiesData struct {
 	Hash common.Hash // Block hash from which to retrieve bodies (excludes Number)
-	call string
+	call uint64
 }
-
-type Bodies []rlp.RawValue
 
 // BlockBodiesRawData represents a block header send.
 type BlockBodiesRawData struct {
-	bodies Bodies
-	call   string
+	bodies []rlp.RawValue
+	call   uint64
 }
 
 // blockBody represents the data content of a single block.
@@ -253,7 +249,7 @@ type blockBody struct {
 // blockBodiesData is the network packet for block content distribution.
 type blockBodiesData struct {
 	bodiesData []*blockBody
-	call       string
+	call       uint64
 }
 
 // blockBody represents the data content of a single block.
