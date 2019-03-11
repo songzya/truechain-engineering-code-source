@@ -662,6 +662,7 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 	} else {
 		if pool.currentState.GetBalance(from).Cmp(tx.Cost()) < 0 {
+			log.Warn("validate balance", "from", from, "balance", pool.currentState.GetBalance(from), "cost", tx.Cost())
 			return ErrInsufficientFunds
 		}
 	}
@@ -873,6 +874,7 @@ func (pool *TxPool) AddLocals(txs []*types.Transaction) []error {
 // If the senders are not among the locally tracked ones, full pricing constraints
 // will apply.
 func (pool *TxPool) AddRemotes(txs []*types.Transaction) []error {
+	log.Trace("AddRemotes", "len(txs)", len(txs))
 	errs := make([]error, len(txs))
 	lenTx := pool.remoteTxlen.Load().(uint64) + 1
 	if lenTx%1000 == 0 {

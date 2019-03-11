@@ -680,8 +680,13 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 				query.Origin.Number += query.Skip + 1
 			}
 		}
+		headData := &BlockHeadersData{
+			call: query.call,
+		}
+		headData.headers = make([]*types.Header, len(headers))
+		copy(headData.headers, headers)
 		log.Debug("Handle send fast block headers", "headers:", len(headers), "time", time.Now().Sub(now), "peer", p.id)
-		return p.SendFastBlockHeaders(BlockHeadersData{headers, query.call})
+		return p.SendFastBlockHeaders(headData)
 
 	case msg.Code == FastBlockHeadersMsg:
 
@@ -737,9 +742,13 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 				bytes += len(data)
 			}
 		}
-
+		bodyData := &BlockBodiesRawData{
+			call: hashData.call,
+		}
+		bodyData.bodies = make([]rlp.RawValue, len(bodies))
+		copy(bodyData.bodies, bodies)
 		log.Debug("Handle send fast block bodies rlp", "bodies", len(bodies), "time", time.Now().Sub(now), "peer", p.id)
-		return p.SendFastBlockBodiesRLP(BlockBodiesRawData{bodies, hashData.call})
+		return p.SendFastBlockBodiesRLP(bodyData)
 
 	case msg.Code == FastBlockBodiesMsg:
 		// A batch of block bodies arrived to one of our previous requests

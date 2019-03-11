@@ -1034,6 +1034,12 @@ func (e *Election) updateMembers(fastNumber *big.Int, infos []*types.CommitteeMe
 		return
 	}
 	if committee.beginFastNumber.Cmp(fastNumber) == 0 {
+		// Switches height array should be nil at committee start block
+		if len(committee.switches) > 0 {
+			log.Info("Reset committee switchinfo on start block", "committee", committee.id, "current", fastNumber)
+			committee.switches = nil
+			rawdb.WriteCommitteeStates(e.snailchain.GetDatabase(), committee.id.Uint64(), nil)
+		}
 		return
 	}
 
@@ -1099,9 +1105,11 @@ func (e *Election) Start() error {
 
 	if currentCommittee.endFastNumber.Cmp(common.Big0) > 0 {
 		// over the switch block, to elect next committee
-		electEndSnailNumber := new(big.Int).Add(currentCommittee.lastElectionNumber, params.ElectionPeriodNumber)
+		electEndSnailNumber := new(big.Int).Sub(currentCommittee.switchCheckNumber, params.SnailConfirmInterval)
 		electBeginSnailNumber := new(big.Int).Add(new(big.Int).Sub(electEndSnailNumber, params.ElectionPeriodNumber), common.Big1)
-
+		if electEndSnailNumber.Cmp(params.ElectionPeriodNumber) < 0 {
+			electBeginSnailNumber = new(big.Int).Set(common.Big1)
+		}
 		members := e.getElectionMembers(electBeginSnailNumber, electEndSnailNumber)
 
 		// get next committee

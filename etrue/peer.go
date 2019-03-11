@@ -412,7 +412,7 @@ func (p *peer) SendFruits(fruits types.Fruits) error {
 	for _, fruit := range fruits {
 		p.knownFruits.Add(fruit.Hash())
 	}
-	log.Debug("SendFruits", "txs", len(fruits), "size", fruits[0].Size(), "peer", p.id)
+	log.Debug("SendFruits", "fts", len(fruits), "size", fruits[0].Size(), "peer", p.id)
 	return p2p.Send(p.rw, FruitMsg, fruits)
 }
 
@@ -525,13 +525,13 @@ func (p *peer) RequestSnailBodies(hashes []common.Hash) error {
 }
 
 // SendFastBlockHeaders sends a batch of block headers to the remote peer.
-func (p *peer) SendFastBlockHeaders(headerData BlockHeadersData) error {
+func (p *peer) SendFastBlockHeaders(headerData *BlockHeadersData) error {
 	return p2p.Send(p.rw, FastBlockHeadersMsg, headerData)
 }
 
 // SendFastBlockBodiesRLP sends a batch of block contents to the remote peer from
 // an already RLP encoded format.
-func (p *peer) SendFastBlockBodiesRLP(bodiesData BlockBodiesRawData) error {
+func (p *peer) SendFastBlockBodiesRLP(bodiesData *BlockBodiesRawData) error {
 	return p2p.Send(p.rw, FastBlockBodiesMsg, bodiesData)
 }
 
