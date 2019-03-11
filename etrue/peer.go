@@ -594,7 +594,7 @@ func (p *peer) RequestHeadersByNumber(origin uint64, amount int, skip int, rever
 
 // RequestBodies fetches a batch of blocks' bodies corresponding to the hashes
 // specified.
-func (p *peer) RequestBodies(hashes []common.Hash, isFastchain bool, call string) error {
+func (p *peer) RequestBodies(hashes []common.Hash, isFastchain bool, call uint64) error {
 	datas := make([]getBlockBodiesData, len(hashes))
 	for _, hash := range hashes {
 		datas = append(datas, getBlockBodiesData{hash, call})
