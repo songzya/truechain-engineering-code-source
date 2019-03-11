@@ -685,7 +685,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		}
 		headData.headers = make([]*types.Header, len(headers))
 		copy(headData.headers, headers)
-		log.Debug("Handle send fast block headers", "headers:", len(headers), "time", time.Now().Sub(now), "peer", p.id)
+		log.Info("Handle send fast block headers", "headers:", len(headers), "time", time.Now().Sub(now), "peer", p.id, "call", query.call)
 		return p.SendFastBlockHeaders(headData)
 
 	case msg.Code == FastBlockHeadersMsg:

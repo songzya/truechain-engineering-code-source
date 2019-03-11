@@ -174,9 +174,11 @@ type getBlockHeadersData struct {
 	call    string
 }
 
+type Headers []*types.Header
+
 // BlockHeadersData represents a block header send.
 type BlockHeadersData struct {
-	headers []*types.Header
+	headers Headers
 	call    string
 }
 
@@ -233,9 +235,11 @@ type getBlockBodiesData struct {
 	call string
 }
 
+type Bodies []rlp.RawValue
+
 // BlockBodiesRawData represents a block header send.
 type BlockBodiesRawData struct {
-	bodies []rlp.RawValue
+	bodies Bodies
 	call   string
 }
 
