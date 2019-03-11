@@ -691,7 +691,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 	case msg.Code == FastBlockHeadersMsg:
 
 		// A batch of headers arrived to one of our previous requests
-		var headerData BlockHeadersData
+		var headerData *BlockHeadersData
 		if err := msg.Decode(&headerData); err != nil {
 			return errResp(ErrDecode, "msg %v: %v", msg, err)
 		}
