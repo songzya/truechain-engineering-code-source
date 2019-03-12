@@ -127,7 +127,7 @@ func (v *BlockValidator) ValidateBody(block *types.SnailBlock) error {
 		temp = fruit.FastNumber().Uint64()
 	}
 
-	if hash := types.DeriveSha(types.Fruits(block.Fruits())); hash != header.FruitsHash {
+	if hash := types.CalcFruitHash(types.Fruits(block.Fruits())); hash != header.FruitsHash {
 		return fmt.Errorf("fruits hash mismatch: have %x, want %x", hash, header.FruitsHash)
 	}
 

@@ -88,7 +88,7 @@ func (p *FakePeer) RequestHeadersByHash(hash common.Hash, amount int, skip int, 
 			}
 		}
 	}
-	p.dl.DeliverHeaders(p.id, headers)
+	p.dl.DeliverHeaders(p.id, headers, types.DownloaderCall)
 	return nil
 }
 
@@ -115,7 +115,7 @@ func (p *FakePeer) RequestHeadersByNumber(number uint64, amount int, skip int, r
 		}
 		headers = append(headers, origin)
 	}
-	p.dl.DeliverHeaders(p.id, headers)
+	p.dl.DeliverHeaders(p.id, headers, types.DownloaderCall)
 	return nil
 }
 
@@ -132,7 +132,7 @@ func (p *FakePeer) RequestBodies(hashes []common.Hash, isFastchain bool, call st
 		signs = append(signs, block.Signs())
 
 	}
-	p.dl.DeliverBodies(p.id, fruits, signs)
+	p.dl.DeliverBodies(p.id, fruits, signs, types.DownloaderCall)
 	return nil
 }
 

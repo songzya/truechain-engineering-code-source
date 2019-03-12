@@ -39,6 +39,7 @@ var (
 	EmptyRootHash  = DeriveSha(Transactions{})
 	EmptyUncleHash = CalcUncleHash(nil)
 	EmptySignHash  = CalcSignHash(nil)
+	EmptyFruitHash = CalcFruitHash(nil)
 )
 
 // A BlockNonce is a 64-bit hash which proves (combined with the
@@ -96,6 +97,10 @@ func CalcUncleHash(uncles []*Header) common.Hash {
 
 func CalcSignHash(signs []*PbftSign) common.Hash {
 	return rlpHash(signs)
+}
+
+func CalcFruitHash(fruits []*SnailBlock) common.Hash {
+	return rlpHash(fruits)
 }
 
 type Blocks []*Block
@@ -620,9 +625,9 @@ func NewSnailBlock(header *SnailHeader, fruits []*SnailBlock, signs []*PbftSign,
 	}
 
 	if len(fruits) == 0 {
-		b.header.FruitsHash = EmptyRootHash
+		b.header.FruitsHash = EmptyFruitHash
 	} else {
-		b.header.FruitsHash = DeriveSha(Fruits(fruits))
+		b.header.FruitsHash = CalcFruitHash(fruits)
 		b.fruits = make([]*SnailBlock, len(fruits))
 		for i := range fruits {
 			b.fruits[i] = CopyFruit(fruits[i])

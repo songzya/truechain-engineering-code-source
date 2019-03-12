@@ -518,7 +518,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		if pm.fetcher != nil && pm.fetcher.requestedID(resp.ReqID) {
 			//pm.fetcher.deliverHeaders(p, resp.ReqID, resp.Headers)
 		} else {
-			err := pm.downloader.DeliverHeaders(p.id, resp.Headers)
+			err := pm.downloader.DeliverHeaders(p.id, resp.Headers, "")
 			if err != nil {
 				log.Debug(fmt.Sprint(err))
 			}

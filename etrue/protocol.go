@@ -29,24 +29,23 @@ import (
 
 // Constants to match up protocol versions and messages
 const (
-	eth62 = 62
-	eth63 = 63
+	etrue63 = 63
 )
 
 // ProtocolName is the official short name of the protocol used during capability negotiation.
 var ProtocolName = "etrue"
 
 // ProtocolVersions are the upported versions of the etrue protocol (first is primary).
-var ProtocolVersions = []uint{eth63, eth62}
+var ProtocolVersions = []uint{etrue63}
 
 // ProtocolLengths are the number of implemented message corresponding to different protocol versions.
-var ProtocolLengths = []uint64{20, 8}
+var ProtocolLengths = []uint64{20}
 
 const ProtocolMaxMsgSize = 10 * 1024 * 1024 // Maximum cap on the size of a protocol message
 
 // etrue protocol message codes
 const (
-	// Protocol messages belonging to eth/62
+	// Protocol messages belonging to etrue/63
 	StatusMsg              = 0x00
 	NewFastBlockHashesMsg  = 0x01
 	TxMsg                  = 0x02
@@ -55,23 +54,21 @@ const (
 	GetFastBlockBodiesMsg  = 0x05
 	FastBlockBodiesMsg     = 0x06
 	NewFastBlockMsg        = 0x07
-
-	BlockSignMsg    = 0x08
-	PbftNodeInfoMsg = 0x09
-
-	FruitMsg      = 0x0a
-	SnailBlockMsg = 0x0b
-	// Protocol messages belonging to eth/63
-	GetNodeDataMsg = 0x0c
-	NodeDataMsg    = 0x0d
-	GetReceiptsMsg = 0x0e
-	ReceiptsMsg    = 0x0f
+	TbftNodeInfoMsg        = 0x08
 
 	//snail sync
-	GetSnailBlockHeadersMsg = 0x10
-	SnailBlockHeadersMsg    = 0x11
-	GetSnailBlockBodiesMsg  = 0x12
-	SnailBlockBodiesMsg     = 0x13
+	NewFruitMsg             = 0x09
+	NewSnailBlockHashesMsg  = 0x0a
+	GetSnailBlockHeadersMsg = 0x0b
+	SnailBlockHeadersMsg    = 0x0c
+	GetSnailBlockBodiesMsg  = 0x0d
+	SnailBlockBodiesMsg     = 0x0e
+	NewSnailBlockMsg        = 0x0f
+
+	GetNodeDataMsg = 0x10
+	NodeDataMsg    = 0x11
+	GetReceiptsMsg = 0x12
+	ReceiptsMsg    = 0x13
 )
 
 type errCode int
@@ -116,19 +113,18 @@ type txPool interface {
 	// SubscribeNewTxsEvent should return an event subscription of
 	// NewTxsEvent and send events to the given channel.
 	SubscribeNewTxsEvent(chan<- types.NewTxsEvent) event.Subscription
-	// for fruits and records
-	//SubscribeNewFruitsEvent(chan<- types.NewFruitsEvent) event.Subscription
 }
 
 type SnailPool interface {
+	// AddRemoteFruits should add the given fruits to the pool.
 	AddRemoteFruits([]*types.SnailBlock, bool) []error
-	//AddRemoteSnailBlocks([]*types.SnailBlock) []error
+
+	// PendingFruits should return pending fruits.
 	PendingFruits() map[common.Hash]*types.SnailBlock
+
+	// SubscribeNewFruitEvent should return an event subscription of
+	// NewFruitsEvent and send events to the given channel.
 	SubscribeNewFruitEvent(chan<- types.NewFruitsEvent) event.Subscription
-	//SubscribeNewSnailBlockEvent(chan<- core.NewSnailBlocksEvent) event.Subscription
-	//AddRemoteRecords([]*types.PbftRecord) []error
-	//AddRemoteRecords([]*types.PbftRecord) []error
-	//SubscribeNewRecordEvent(chan<- core.NewRecordsEvent) event.Subscription
 
 	RemovePendingFruitByFastHash(fasthash common.Hash)
 }
@@ -156,6 +152,12 @@ type statusData struct {
 	CurrentBlock     common.Hash
 	GenesisBlock     common.Hash
 	CurrentFastBlock common.Hash
+}
+
+// newSnailBlockHashesData is the network packet for the block announcements.
+type newSnailBlockHashesData []struct {
+	Hash   common.Hash // Hash of one particular block being announced
+	Number uint64      // Number of one particular block being announced
 }
 
 // newBlockHashesData is the network packet for the block announcements.
@@ -258,5 +260,14 @@ type snailBlockBody struct {
 	Signs  []*types.PbftSign
 }
 
-// blockBodiesData is the network packet for block content distribution.
-type snailBlockBodiesData []*snailBlockBody
+// BlockHeadersData represents a block header send.
+type SnailBlockHeadersData struct {
+	Headers []*types.SnailHeader
+	Call    string // Distinguish fetcher and downloader
+}
+
+// snailBlockBodiesData is the network packet for block content distribution.
+type snailBlockBodiesData struct {
+	BodiesData []*snailBlockBody
+	Call       string // Distinguish fetcher and downloader
+}

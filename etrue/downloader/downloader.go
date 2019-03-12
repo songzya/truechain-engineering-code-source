@@ -20,6 +20,7 @@ package downloader
 import (
 	"errors"
 	"fmt"
+	"github.com/truechain/truechain-engineering-code/consensus/tbft/help"
 	"github.com/truechain/truechain-engineering-code/core/rawdb"
 	"math/big"
 	"sync"
@@ -355,7 +356,7 @@ func (d *Downloader) synchronise(id string, hash common.Hash, td *big.Int, mode 
 
 	// Post a user notification of the sync (only once per session)
 	//if atomic.CompareAndSwapInt32(&d.notified, 0, 1) {
-		log.Info("snail Block synchronisation started")
+	log.Info("snail Block synchronisation started")
 	//}
 	// Reset the queue, peer set and wake channels to clean any internal leftover state
 	d.queue.Reset()
@@ -1484,13 +1485,23 @@ func (d *Downloader) SyncFast(peer string, head common.Hash, fbLastNumber uint64
 
 // DeliverHeaders injects a new batch of block headers received from a remote
 // node into the download schedule.
-func (d *Downloader) DeliverHeaders(id string, headers []*types.SnailHeader) (err error) {
+func (d *Downloader) DeliverHeaders(id string, headers []*types.SnailHeader, call string) (err error) {
+	watch := help.NewTWatch(3, fmt.Sprintf("peer: %s, handleMsg DeliverSnailHeaders, call: %s header %d", id, call, len(headers)))
+	defer func() {
+		watch.EndWatch()
+		watch.Finish("end")
+	}()
 	return d.deliver(id, d.headerCh, &headerPack{id, headers}, headerInMeter, headerDropMeter)
 }
 
 // DeliverBodies injects a new batch of block bodies received from a remote node.
-func (d *Downloader) DeliverBodies(id string, fruit [][]*types.SnailBlock, signs [][]*types.PbftSign) (err error) {
-	return d.deliver(id, d.bodyCh, &bodyPack{id, fruit, signs}, bodyInMeter, bodyDropMeter)
+func (d *Downloader) DeliverBodies(id string, fruits [][]*types.SnailBlock, signs [][]*types.PbftSign, call string) (err error) {
+	watch := help.NewTWatch(3, fmt.Sprintf("peer: %s, handleMsg DeliverSnailBodies, call: %s body %d", id, call, len(fruits)))
+	defer func() {
+		watch.EndWatch()
+		watch.Finish("end")
+	}()
+	return d.deliver(id, d.bodyCh, &bodyPack{id, fruits, signs}, bodyInMeter, bodyDropMeter)
 }
 
 // DeliverNodeData injects a new batch of node state data received from a remote node.

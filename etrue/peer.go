@@ -72,6 +72,11 @@ const (
 	// above some healthy uncle limit, so use that.
 	maxQueuedFastAnns = 4
 
+	// maxQueuedSnailAnns is the maximum number of block announcements to queue up before
+	// dropping broadcasts. Similarly to block propagations, there's no point to queue
+	// above some healthy uncle limit, so use that.
+	maxQueuedSnailAnns = 4
+
 	handshakeTimeout = 5 * time.Second
 )
 
@@ -122,9 +127,10 @@ type peer struct {
 
 	queuedSnailBlock chan *snailBlockEvent // Queue of newSnailBlock to broadcast to the peer
 
-	queuedFastAnns chan *types.Block // Queue of fastBlocks to announce to the peer
-	term           chan struct{}     // Termination channel to stop the broadcaster
-	dropTx         uint64
+	queuedFastAnns  chan *types.Block      // Queue of fastBlocks to announce to the peer
+	queuedSnailAnns chan *types.SnailBlock // Queue of SnailBlocks to announce to the peer
+	term            chan struct{}          // Termination channel to stop the broadcaster
+	dropTx          uint64
 }
 
 func newPeer(version int, p *p2p.Peer, rw p2p.MsgReadWriter) *peer {
@@ -147,6 +153,7 @@ func newPeer(version int, p *p2p.Peer, rw p2p.MsgReadWriter) *peer {
 
 		queuedSnailBlock: make(chan *snailBlockEvent, maxQueuedSnailBlock),
 		queuedFastAnns:   make(chan *types.Block, maxQueuedFastAnns),
+		queuedSnailAnns:  make(chan *types.SnailBlock, maxQueuedSnailAnns),
 		term:             make(chan struct{}),
 		dropTx:           0,
 	}
@@ -183,13 +190,6 @@ func (p *peer) broadcast() {
 				return
 			}
 			p.Log().Trace("Broadcast transactions", "count", len(txs))
-
-			//add for sign
-		case signs := <-p.queuedSign:
-			if err := p.SendSign(signs); err != nil {
-				return
-			}
-			p.Log().Trace("Broadcast sign")
 
 			//add for node info
 		case nodeInfo := <-p.queuedNodeInfo:
@@ -228,6 +228,11 @@ func (p *peer) broadcast() {
 			}
 			p.Log().Trace("Announced fast block", "number", block.Number(), "hash", block.Hash())
 
+		case block := <-p.queuedSnailAnns:
+			if err := p.SendNewSnailBlockHashes([]common.Hash{block.Hash()}, []uint64{block.NumberU64()}); err != nil {
+				return
+			}
+			p.Log().Trace("Announced fast block", "number", block.Number(), "hash", block.Hash())
 		case <-p.term:
 			return
 		}
@@ -369,15 +374,6 @@ func (p *peer) AsyncSendTransactions(txs []*types.Transaction) {
 	}
 }
 
-//SendSigns sends signs to the peer and includes the hashes
-// in its signs hash set for future reference.
-func (p *peer) SendSign(signs []*types.PbftSign) error {
-	for _, sign := range signs {
-		p.knownSign.Add(sign.Hash())
-	}
-	return p2p.Send(p.rw, BlockSignMsg, signs)
-}
-
 func (p *peer) AsyncSendSign(signs []*types.PbftSign) {
 	select {
 	case p.queuedSign <- signs:
@@ -394,7 +390,7 @@ func (p *peer) AsyncSendSign(signs []*types.PbftSign) {
 func (p *peer) SendNodeInfo(nodeInfo *types.EncryptNodeMessage) error {
 	p.knownNodeInfos.Add(nodeInfo.Hash())
 	log.Trace("SendNodeInfo", "size", nodeInfo.Size(), "peer", p.id)
-	return p2p.Send(p.rw, PbftNodeInfoMsg, nodeInfo)
+	return p2p.Send(p.rw, TbftNodeInfoMsg, nodeInfo)
 }
 
 func (p *peer) AsyncSendNodeInfo(nodeInfo *types.EncryptNodeMessage) {
@@ -413,7 +409,7 @@ func (p *peer) SendFruits(fruits types.Fruits) error {
 		p.knownFruits.Add(fruit.Hash())
 	}
 	log.Debug("SendFruits", "fts", len(fruits), "size", fruits[0].Size(), "peer", p.id)
-	return p2p.Send(p.rw, FruitMsg, fruits)
+	return p2p.Send(p.rw, NewFruitMsg, fruits)
 }
 
 // AsyncSendFruits queues list of fruits propagation to a remote
@@ -474,10 +470,36 @@ func (p *peer) AsyncSendNewFastBlock(block *types.Block) {
 	}
 }
 
+// SendNewSnailBlockHashes announces the availability of a number of blocks through
+// a hash notification.
+func (p *peer) SendNewSnailBlockHashes(hashes []common.Hash, numbers []uint64) error {
+	for _, hash := range hashes {
+		p.knownSnailBlocks.Add(hash)
+	}
+	request := make(newSnailBlockHashesData, len(hashes))
+	for i := 0; i < len(hashes); i++ {
+		request[i].Hash = hashes[i]
+		request[i].Number = numbers[i]
+	}
+	return p2p.Send(p.rw, NewSnailBlockHashesMsg, request)
+}
+
+// AsyncSendNewSnailBlockHash queues the availability of a snail block for propagation to a
+// remote peer. If the peer's broadcast queue is full, the event is silently
+// dropped.
+func (p *peer) AsyncSendNewSnailBlockHash(block *types.SnailBlock) {
+	select {
+	case p.queuedSnailAnns <- block:
+		p.knownSnailBlocks.Add(block.Hash())
+	default:
+		p.Log().Debug("Dropping snail block announcement", "number", block.NumberU64(), "hash", block.Hash(), "queuedSnailAnns", len(p.queuedSnailAnns), "peer", p.RemoteAddr())
+	}
+}
+
 func (p *peer) SendNewSnailBlock(snailBlock *types.SnailBlock, td *big.Int) error {
 	p.knownSnailBlocks.Add(snailBlock.Hash())
 	log.Debug("SendNewSnailBlock", "size", snailBlock.Size(), "peer", p.id)
-	return p2p.Send(p.rw, SnailBlockMsg, []interface{}{snailBlock, td})
+	return p2p.Send(p.rw, NewSnailBlockMsg, []interface{}{snailBlock, td})
 }
 
 // AsyncSendNewSnailBlock queues an entire snailBlock for propagation to a remote peer. If
@@ -492,8 +514,8 @@ func (p *peer) AsyncSendNewSnailBlock(snailBlock *types.SnailBlock, td *big.Int)
 }
 
 // SendSnailFastBlockHeaders sends a batch of block headers to the remote peer.
-func (p *peer) SendSnailBlockHeaders(headers []*types.SnailHeader) error {
-	return p2p.Send(p.rw, SnailBlockHeadersMsg, headers)
+func (p *peer) SendSnailBlockHeaders(headerData *SnailBlockHeadersData) error {
+	return p2p.Send(p.rw, SnailBlockHeadersMsg, headerData)
 }
 
 // RequestOneFastHeader is a wrapper around the header query functions to fetch a
@@ -537,8 +559,8 @@ func (p *peer) SendFastBlockBodiesRLP(bodiesData *BlockBodiesRawData) error {
 
 // SendFastBlockBodiesRLP sends a batch of block contents to the remote peer from
 // an already RLP encoded format.
-func (p *peer) SendSnailBlockBodiesRLP(bodies []rlp.RawValue) error {
-	return p2p.Send(p.rw, SnailBlockBodiesMsg, bodies)
+func (p *peer) SendSnailBlockBodiesRLP(bodiesData *BlockBodiesRawData) error {
+	return p2p.Send(p.rw, SnailBlockBodiesMsg, bodiesData)
 }
 
 // SendNodeDataRLP sends a batch of arbitrary internal data, corresponding to the
