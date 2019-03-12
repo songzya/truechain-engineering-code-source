@@ -149,7 +149,7 @@ type BlockChain struct {
 
 	badBlocks *lru.Cache // Bad block cache
 
-	isFallback bool
+	isFallback	 bool
 }
 
 // NewBlockChain returns a fully initialised block chain using information
@@ -194,7 +194,7 @@ func NewBlockChain(db etruedb.Database, cacheConfig *CacheConfig,
 		engine:        engine,
 		vmConfig:      vmConfig,
 		badBlocks:     badBlocks,
-		isFallback:    false,
+		isFallback:		false,
 	}
 	bc.SetValidator(NewBlockValidator(chainConfig, bc, engine))
 	bc.SetProcessor(NewStateProcessor(chainConfig, bc, engine))
@@ -599,21 +599,28 @@ func (bc *BlockChain) ExportN(w io.Writer, first uint64, last uint64) error {
 // Note, this function assumes that the `mu` mutex is held!
 func (bc *BlockChain) insert(block *types.Block) {
 
+
 	// Add the block to the canonical chain number scheme and mark as the head
 	rawdb.WriteCanonicalHash(bc.db, block.Hash(), block.NumberU64())
 	rawdb.WriteHeadBlockHash(bc.db, block.Hash())
 
 	bc.currentBlock.Store(block)
 
-	// If the block is better than our head or is on a different chain, force update heads
-	bc.hc.SetCurrentHeader(block.Header())
-	rawdb.WriteHeadFastBlockHash(bc.db, block.Hash())
 
-	bc.currentFastBlock.Store(block)
 
-	if bc.isFallback && block.NumberU64() == bc.CurrentFastBlock().NumberU64() {
-		bc.isFallback = false
+
+	if block.NumberU64() == bc.CurrentFastBlock().NumberU64() {
+
+		bc.isFallback = false;
+
+		// If the block is better than our head or is on a different chain, force update heads
+		bc.hc.SetCurrentHeader(block.Header())
+		rawdb.WriteHeadFastBlockHash(bc.db, block.Hash())
+		bc.currentFastBlock.Store(block)
 	}
+
+
+
 
 }
 

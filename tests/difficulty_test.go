@@ -25,7 +25,7 @@ import (
 
 var (
 	mainnetChainConfig = params.ChainConfig{
-		ChainID: big.NewInt(1),
+		ChainID:        big.NewInt(1),
 	}
 )
 
@@ -45,6 +45,7 @@ func TestDifficulty(t *testing.T) {
 	dt.skipLoad("difficultyCustomHomestead\\.json")
 	dt.skipLoad("difficultyMorden\\.json")
 	dt.skipLoad("difficultyOlimpic\\.json")
+
 
 	dt.walk(t, difficultyTestDir, func(t *testing.T, name string, test *DifficultyTest) {
 		cfg := dt.findConfig(name)

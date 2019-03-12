@@ -877,7 +877,7 @@ func (pool *TxPool) AddRemotes(txs []*types.Transaction) []error {
 	log.Trace("AddRemotes", "len(txs)", len(txs))
 	errs := make([]error, len(txs))
 	lenTx := pool.remoteTxlen.Load().(uint64) + 1
-	if lenTx%1000 == 0 {
+	if lenTx > 0 && lenTx%1000 == 0 {
 		log.Warn("AddRemotes", "txs", len(txs), "newTxsCh", len(pool.newTxsCh), "lenTx", lenTx)
 	}
 	pool.remoteTxlen.Store(lenTx)
@@ -914,7 +914,7 @@ func (pool *TxPool) addTx(tx *types.Transaction, local bool) error {
 // addTxs attempts to queue a batch of transactions if they are valid.
 func (pool *TxPool) addTxs(txs []*types.Transaction, local bool, mark string) []error {
 
-	watch := help.NewTWatch(2, fmt.Sprintf("handleMsg addTxs newTxsCh: %d txs: %d", len(pool.newTxsCh), len(txs)))
+	watch := help.NewTWatch(3, fmt.Sprintf("handleMsg addTxs newTxsCh: %d txs: %d", len(pool.newTxsCh), len(txs)))
 	defer func() {
 		watch.EndWatch()
 		watch.Finish(fmt.Sprintf("end   mark: %s", mark))

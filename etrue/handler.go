@@ -681,7 +681,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 				query.Origin.Number += query.Skip + 1
 			}
 		}
-		log.Info("Handle send fast block headers", "headers:", len(headers), "time", time.Now().Sub(now), "peer", p.id, "call", query.Call)
+		log.Debug("Handle send fast block headers", "headers:", len(headers), "time", time.Now().Sub(now), "peer", p.id, "call", query.Call)
 		return p.SendFastBlockHeaders(&BlockHeadersData{headers, query.Call})
 
 	case msg.Code == FastBlockHeadersMsg:
@@ -697,7 +697,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 
 		filter := len(headers) == 1
 		if len(headers) > 0 {
-			log.Info("FastBlockHeadersMsg", "len(headers)", len(headers), "number", headers[0].Number, "Call", headerData.Call)
+			log.Info("FastBlockHeadersMsg", "len(headers)", len(headers), "number", headers[0].Number, "call", headerData.Call)
 		}
 		if filter {
 			// Irrelevant of the fork checks, send the header to the fetcher just in case
