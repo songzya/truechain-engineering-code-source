@@ -561,10 +561,10 @@ func (p *peer) RequestOneFastHeader(hash common.Hash) error {
 	} else {
 		p.Log().Debug("Fetching single header  GetFastBlockHeadersMsg", "hash", hash)
 	}
-	return p2p.Send(p.rw, GetFastBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Hash: hash}, Amount: uint64(1), Skip: uint64(0), Reverse: false, call: types.FetcherCall})
+	return p2p.Send(p.rw, GetFastBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Hash: hash}, Amount: uint64(1), Skip: uint64(0), Reverse: false, Call: types.FetcherCall})
 }
 
-// RequestHeadersByHash fetches a batch of blocks' headers corresponding to the
+// RequestHeadersByHash fetches a batch of blocks' Headers corresponding to the
 // specified header query, based on the hash of an origin block.
 func (p *peer) RequestHeadersByHash(origin common.Hash, amount int, skip int, reverse bool, isFastchain bool) error {
 	if isFastchain {
@@ -573,7 +573,7 @@ func (p *peer) RequestHeadersByHash(origin common.Hash, amount int, skip int, re
 		} else {
 			p.Log().Debug("Fetching batch of headers  GetFastOneBlockHeadersMsg", "count", amount, "fromhash", origin, "skip", skip, "reverse", reverse)
 		}
-		return p2p.Send(p.rw, GetFastBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Hash: origin}, Amount: uint64(amount), Skip: uint64(skip), Reverse: reverse, call: types.DownloaderCall})
+		return p2p.Send(p.rw, GetFastBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Hash: origin}, Amount: uint64(amount), Skip: uint64(skip), Reverse: reverse, Call: types.DownloaderCall})
 	}
 	p.Log().Debug("Fetching batch of headers  GetSnailBlockHeadersMsg", "count", amount, "fromhash", origin, "skip", skip, "reverse", reverse)
 	return p2p.Send(p.rw, GetSnailBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Hash: origin}, Amount: uint64(amount), Skip: uint64(skip), Reverse: reverse})
@@ -585,7 +585,7 @@ func (p *peer) RequestHeadersByNumber(origin uint64, amount int, skip int, rever
 
 	if isFastchain {
 		p.Log().Debug("Fetching batch of headers GetFastBlockHeadersMsg number", "count", amount, "fromhash", origin, "skip", skip, "reverse", reverse)
-		return p2p.Send(p.rw, GetFastBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Number: origin}, Amount: uint64(amount), Skip: uint64(skip), Reverse: reverse, call: types.DownloaderCall})
+		return p2p.Send(p.rw, GetFastBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Number: origin}, Amount: uint64(amount), Skip: uint64(skip), Reverse: reverse, Call: types.DownloaderCall})
 	}
 	p.Log().Debug("Fetching batch of headers  GetSnailBlockHeadersMsg number", "count", amount, "fromhash", origin, "skip", skip, "reverse", reverse)
 	return p2p.Send(p.rw, GetSnailBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Number: origin}, Amount: uint64(amount), Skip: uint64(skip), Reverse: reverse})

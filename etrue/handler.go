@@ -603,7 +603,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		first := true
 		maxNonCanonical := uint64(100)
 
-		log.Debug("GetFastBlockHeadersMsg", "peer", p.id, "call", query.call, "")
+		log.Debug("GetFastBlockHeadersMsg", "peer", p.id, "call", query.Call)
 
 		// Gather headers until the fetch or network limits is reached
 		var (
@@ -682,11 +682,11 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 			}
 		}
 		headData := &BlockHeadersData{
-			call: query.call,
+			Call: query.Call,
 		}
-		headData.headers = make([]*types.Header, len(headers))
-		copy(headData.headers, headers)
-		log.Info("Handle send fast block headers", "headers:", len(headers), "time", time.Now().Sub(now), "peer", p.id, "call", query.call)
+		headData.Headers = make([]*types.Header, len(headers))
+		copy(headData.Headers, headers)
+		log.Info("Handle send fast block headers", "headers:", len(headers), "time", time.Now().Sub(now), "peer", p.id, "call", query.Call)
 		return p.SendFastBlockHeaders(headData)
 
 	case msg.Code == FastBlockHeadersMsg:
@@ -697,12 +697,12 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 			return errResp(ErrDecode, "msg %v: %v", msg, err)
 		}
 		// Filter out any explicitly requested headers, deliver the rest to the downloader
-		headers := make([]*types.Header, len(headerData.headers))
-		copy(headers, headerData.headers)
+		headers := make([]*types.Header, len(headerData.Headers))
+		copy(headers, headerData.Headers)
 
 		filter := len(headers) == 1
 		if len(headers) > 0 {
-			log.Info("FastBlockHeadersMsg", "len(headers)", len(headers), "number", headers[0].Number, "call", headerData.call)
+			log.Info("FastBlockHeadersMsg", "len(headers)", len(headers), "number", headers[0].Number, "Call", headerData.Call)
 		}
 		if filter {
 			// Irrelevant of the fork checks, send the header to the fetcher just in case
@@ -711,7 +711,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		// mecMark
 		if len(headers) > 0 || !filter {
 			log.Debug("FastBlockHeadersMsg", "len(headers)", len(headers), "filter", filter)
-			err := pm.fdownloader.DeliverHeaders(p.id, headers, headerData.call)
+			err := pm.fdownloader.DeliverHeaders(p.id, headers, headerData.Call)
 			if err != nil {
 				log.Debug("Failed to deliver headers", "err", err)
 			}
@@ -744,10 +744,10 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 			}
 		}
 		bodyData := &BlockBodiesRawData{
-			call: hashData.call,
+			Call: hashData.Call,
 		}
-		bodyData.bodies = make([]rlp.RawValue, len(bodies))
-		copy(bodyData.bodies, bodies)
+		bodyData.Bodies = make([]rlp.RawValue, len(bodies))
+		copy(bodyData.Bodies, bodies)
 		log.Debug("Handle send fast block bodies rlp", "bodies", len(bodies), "time", time.Now().Sub(now), "peer", p.id)
 		return p.SendFastBlockBodiesRLP(bodyData)
 
@@ -758,11 +758,11 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 			return errResp(ErrDecode, "msg %v: %v", msg, err)
 		}
 		// Deliver them all to the downloader for queuing
-		transactions := make([][]*types.Transaction, len(request.bodiesData))
-		signs := make([][]*types.PbftSign, len(request.bodiesData))
-		infos := make([][]*types.CommitteeMember, len(request.bodiesData))
+		transactions := make([][]*types.Transaction, len(request.BodiesData))
+		signs := make([][]*types.PbftSign, len(request.BodiesData))
+		infos := make([][]*types.CommitteeMember, len(request.BodiesData))
 
-		for i, body := range request.bodiesData {
+		for i, body := range request.BodiesData {
 			transactions[i] = body.Transactions
 			signs[i] = body.Signs
 			infos[i] = body.Infos
@@ -778,7 +778,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		// mecMark
 		if len(transactions) > 0 || len(signs) > 0 || len(infos) > 0 || !filter {
 			log.Debug("FastBlockBodiesMsg", "len(transactions)", len(transactions), "len(signs)", len(signs), "len(infos)", len(infos), "filter", filter)
-			err := pm.fdownloader.DeliverBodies(p.id, transactions, signs, infos, request.call)
+			err := pm.fdownloader.DeliverBodies(p.id, transactions, signs, infos, request.Call)
 			if err != nil {
 				log.Debug("Failed to deliver bodies", "err", err)
 			}
