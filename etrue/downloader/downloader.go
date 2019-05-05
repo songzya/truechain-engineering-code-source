@@ -1053,7 +1053,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 	defer ticker.Stop()
 
 	update := make(chan struct{}, 1)
-
+	log.Info("fetchParts start", "type", kind, "pending", pending())
 	// Prepare the queue and fetch block parts until the block header fetcher's done
 	finished := false
 	for {
@@ -1062,6 +1062,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			return errCancel
 
 		case packet := <-deliveryCh:
+			log.Info("fetchParts start 111", "type", kind, "pending", pending())
 			// If the peer was previously banned and failed to deliver its pack
 			// in a reasonable time frame, ignore its message.
 			log.Debug("Snail downloader ", "id", packet.PeerId(), "function", "fetchParts")
@@ -1094,6 +1095,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			}
 
 		case cont := <-wakeCh:
+			log.Info("fetchParts start 222", "type", kind, "pending", pending(), "cont", cont)
 			// The header fetcher sent a continuation flag, check if it's done
 			if !cont {
 				finished = true
@@ -1105,6 +1107,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			}
 
 		case <-ticker.C:
+			log.Info("fetchParts start 333", "type", kind, "pending", pending())
 			// Sanity check update the progress
 			select {
 			case update <- struct{}{}:
@@ -1112,6 +1115,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			}
 
 		case <-update:
+			log.Info("fetchParts start 444", "type", kind, "pending", pending())
 			// Short circuit if we lost all our peers
 			if d.peers.Len() == 0 {
 				return errNoPeers
@@ -1153,6 +1157,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			// Send a download request to all idle peers, until throttled
 			progressed, throttled, running := false, false, inFlight()
 			idles, total := idle()
+			log.Info("fetchParts start 444", "type", kind, "pending", pending(), "running", running, "total", total)
 
 			for _, peer := range idles {
 				// Short circuit if throttling activated
@@ -1168,6 +1173,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 				// no more headers are available, or that the peer is known not to
 				// have them.
 				request, progress, err := reserve(peer, capacity(peer))
+				log.Info("fetchParts start 444", "type", kind, "pending", pending(), "progress", progress, "request", request.From)
 				if err != nil {
 					return err
 				}
@@ -1316,7 +1322,7 @@ func (d *Downloader) processHeaders(origin uint64, pivot uint64, td *big.Int) er
 				d.syncStatsChainHeight = origin - 1
 			}
 			d.syncStatsLock.Unlock()
-
+			log.Info("processHeaders", "headers", len(headers), "origin", origin)
 			// Signal the content downloaders of the availablility of new tasks
 			for _, ch := range []chan bool{d.bodyWakeCh} {
 				select {
@@ -1391,29 +1397,32 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 		"firstnum", first.Number, "firsthash", first.Hash(),
 		"lastnum", last.Number, "lasthash", last.Hash(),
 	)
-
+	blocks := []*types.SnailBlock{}
 	for _, result := range results {
-		blocks := make([]*types.SnailBlock, 1)
-		blocks[0] = types.NewSnailBlockWithHeader(result.Sheader).WithBody(result.Fruits, nil)
+		block := types.NewSnailBlockWithHeader(result.Sheader).WithBody(result.Fruits, nil)
 		log.Trace("Snail importBlockResults  snail block ", "snailNumber", result.Sheader.Number, "Phash", result.Sheader.ParentHash, "hash", result.Sheader.Hash())
 
 		fruitLen := uint64(len(result.Fruits))
-
 		if fruitLen > 0 {
-
 			fbNumber := result.Fruits[0].FastNumber().Uint64()
 			fbLastNumber := result.Fruits[fruitLen-1].FastNumber().Uint64()
 
 			if fbLastNumber < fbNumber || fbNumber < 1 {
 				return errFruits
 			}
-			log.Debug("Snail importBlockResults ", "fbNumber", fbNumber, "fbLastNumber", fbLastNumber)
-			if err := d.SyncFast(p.GetID(), hash, fbLastNumber, d.mode); err != nil {
-				return err
-			}
+			blocks = append(blocks, block)
+		}
+	}
+	if len(blocks) > 1 {
+		firstB := blocks[0]
+		fbNumber := firstB.Fruits()[0].FastNumber().Uint64()
 
-		} else {
-			log.Debug("Snail fruit Len is 0", "block", blocks[0].Number())
+		result := blocks[len(blocks)-1]
+		fruitLen := uint64(len(result.Fruits()))
+		fbLastNumber := result.Fruits()[fruitLen-1].FastNumber().Uint64()
+		log.Debug("Snail fats importBlockResults ", "fbNumber", fbNumber, "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
+		if err := d.SyncFast(p.GetID(), hash, fbLastNumber, d.mode); err != nil {
+			return err
 		}
 
 		if index, err := d.blockchain.InsertChain(blocks); err != nil {
@@ -1423,7 +1432,6 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 			}
 			return errInvalidChain
 		}
-
 	}
 
 	return nil
@@ -1438,7 +1446,11 @@ func (d *Downloader) SyncFast(peer string, head common.Hash, fbLastNumber uint64
 	} else if mode == SnapShotSync {
 		currentNumber = d.fastDown.GetBlockChain().CurrentHeader().Number.Uint64()
 	}
+	log.Debug("SyncFast fastDownloader ", "fbNumLast", fbLastNumber, "currentNum", currentNumber)
 
+	defer func(start time.Time) {
+		log.Debug("SyncFast Synchronisation terminated", "elapsed", time.Since(start))
+	}(time.Now())
 	if fbLastNumber > currentNumber {
 		for {
 			height := fbLastNumber - currentNumber
@@ -1485,6 +1497,7 @@ func (d *Downloader) SyncFast(peer string, head common.Hash, fbLastNumber uint64
 // DeliverHeaders injects a new batch of block headers received from a remote
 // node into the download schedule.
 func (d *Downloader) DeliverHeaders(id string, headers []*types.SnailHeader) (err error) {
+	log.Info("DeliverHeaders", "headers", len(headers))
 	return d.deliver(id, d.headerCh, &headerPack{id, headers}, headerInMeter, headerDropMeter)
 }
 

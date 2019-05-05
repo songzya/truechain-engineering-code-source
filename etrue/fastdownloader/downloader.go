@@ -61,8 +61,9 @@ var (
 	reorgProtThreshold   = 48 // Threshold number of recent blocks to disable mini reorg protection
 	reorgProtHeaderDelay = 2  // Number of headers to delay delivering to cover mini reorgs
 
-	fsHeaderCheckFrequency = 100  // Verification frequency of the downloaded headers during fast sync
-	fsHeaderSafetyNet      = 2048 // Number of headers to discard in case a chain violation is detected
+	fsHeaderCheckFrequency = 100             // Verification frequency of the downloaded headers during fast sync
+	fsHeaderSafetyNet      = 2048            // Number of headers to discard in case a chain violation is detected
+	fsHeaderContCheck      = 2 * time.Second // Time interval to check for header continuations during state download
 
 )
 
@@ -625,18 +626,18 @@ func (d *Downloader) fetchHeaders(p etrue.PeerConnection, from uint64, height in
 	defer timeout.Stop()
 
 	var ttl time.Duration
-	getHeaders := func(from uint64, height int) {
+	getHeaders := func(from uint64) {
 		request = time.Now()
 
 		ttl = d.requestTTL()
 		timeout.Reset(ttl)
-		p.GetLog().Debug("Fetching full headers", "count", height, "from", from)
-		go p.GetPeer().RequestHeadersByNumber(from, height, 0, false, true)
+		p.GetLog().Trace("Fetching full headers", "count", MaxHeaderFetch, "from", from)
+		go p.GetPeer().RequestHeadersByNumber(from, MaxHeaderFetch, 0, false, true)
 
 	}
 
 	// Start pulling the header chain skeleton until all is done
-	getHeaders(from, height)
+	getHeaders(from)
 
 	for {
 		select {
@@ -679,6 +680,7 @@ func (d *Downloader) fetchHeaders(p etrue.PeerConnection, from uint64, height in
 						head = full
 					}
 				}
+				p.GetLog().Trace("fetchHeaders", "count", len(headers), "from", from, "headerProcCh", len(d.headerProcCh), "head", head)
 				// If the head is way older than this batch, delay the last few headers
 				if head+uint64(reorgProtThreshold) < headers[n-1].Number.Uint64() {
 					delay := reorgProtHeaderDelay
@@ -691,9 +693,23 @@ func (d *Downloader) fetchHeaders(p etrue.PeerConnection, from uint64, height in
 
 			// Insert all the new headers and fetch the next batch
 			if len(headers) > 0 {
+				p.GetLog().Trace("Scheduling new headers", "count", len(headers), "from", from, "headerProcCh", len(d.headerProcCh))
 				select {
 				case d.headerProcCh <- headers:
-					return nil
+				case <-d.cancelCh:
+					return errCancelHeaderFetch
+				}
+				from += uint64(len(headers))
+				p.GetLog().Trace("Scheduling getHeaders", "count", len(headers), "from", from, "headerProcCh", len(d.headerProcCh))
+				getHeaders(from)
+			} else {
+				// No headers delivered, or all of them being delayed, sleep a bit and retry
+				p.GetLog().Trace("All headers delayed, waiting", "from", from)
+				select {
+				case <-time.After(fsHeaderContCheck):
+					p.GetLog().Trace("All headers delayed, waiting fsHeaderContCheck", "from", from)
+					getHeaders(from)
+					continue
 				case <-d.cancelCh:
 					return errCancelHeaderFetch
 				}
@@ -820,6 +836,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			return errCancel
 
 		case packet := <-deliveryCh:
+			log.Info("fetchParts start 111", "type", kind, "pending", pending())
 			// If the peer was previously banned and failed to deliver its pack
 			// in a reasonable time frame, ignore its message.
 			if peer := d.peers.Peer(packet.PeerId()); peer != nil {
@@ -909,6 +926,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			// Send a download request to all idle peers, until throttled
 			progressed, throttled, running := false, false, inFlight()
 			idles, total := idle()
+			log.Info("fetchParts start 444", "type", kind, "pending", pending(), "running", running, "total", total)
 
 			for _, peer := range idles {
 				// Short circuit if throttling activated
@@ -924,6 +942,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 				// no more headers are available, or that the peer is known not to
 				// have them.
 				request, progress, err := reserve(peer, capacity(peer))
+				log.Info("fetchParts start 444", "type", kind, "pending", pending(), "progress", progress, "request", request)
 				if err != nil {
 					return err
 				}
@@ -1003,6 +1022,7 @@ func (d *Downloader) processHeaders(origin uint64, pivot uint64) error {
 			return errCancelHeaderProcessing
 
 		case headers := <-d.headerProcCh:
+			log.Info("processHeaders Terminate", "headers", len(headers), "PendingBlocks", d.queue.PendingBlocks(), "PendingReceipts", d.queue.PendingReceipts())
 			// Terminate header processing if we synced up
 			if len(headers) == 0 {
 				// Notify everyone that headers are fully processed
@@ -1103,7 +1123,7 @@ func (d *Downloader) processHeaders(origin uint64, pivot uint64) error {
 				d.syncStatsChainHeight = origin - 1
 			}
 			d.syncStatsLock.Unlock()
-
+			log.Info("processHeaders over", "headers", len(headers), "origin", origin)
 			// Signal the content downloaders of the availablility of new tasks
 			for _, ch := range []chan bool{d.bodyWakeCh, d.receiptWakeCh} {
 				select {
@@ -1122,6 +1142,7 @@ func (d *Downloader) processHeaders(origin uint64, pivot uint64) error {
 func (d *Downloader) processFullSyncContent() error {
 	for {
 		results := d.queue.Results(true)
+		log.Info("processFullSyncContent", "results", len(results))
 		if len(results) == 0 {
 			return nil
 		}

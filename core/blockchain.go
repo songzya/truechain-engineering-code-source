@@ -992,7 +992,7 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 
 		stats.processed++
 
-		if batch.ValueSize() >= etruedb.IdealBatchSize || len(block.SwitchInfos()) >0 {
+		if batch.ValueSize() >= etruedb.IdealBatchSize || len(block.SwitchInfos()) > 0 {
 			if err := batch.Write(); err != nil {
 				return 0, err
 			}
@@ -1015,11 +1015,6 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 	rawdb.WriteHeadFastBlockHash(bc.db, head.Hash())
 	bc.currentFastBlock.Store(head)
 	bc.chainmu.Unlock()
-
-
-
-
-
 
 	context := []interface{}{
 		"count", stats.processed, "elapsed", common.PrettyDuration(time.Since(start)),
@@ -1089,7 +1084,6 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 		// Full but not archive node, do proper garbage collection
 		triedb.Reference(root, common.Hash{}) // metadata reference to keep trie alive
 		bc.triegc.Push(root, -int64(block.NumberU64()))
-		log.Debug("WriteBlockWithState", "current", block.NumberU64())
 		if current := block.NumberU64(); current > triesInMemory {
 			// If we exceeded our memory allowance, flush matured singleton nodes to disk
 			var (
