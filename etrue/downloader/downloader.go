@@ -1053,7 +1053,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 	defer ticker.Stop()
 
 	update := make(chan struct{}, 1)
-	log.Info("fetchParts start", "type", kind, "pending", pending())
+	log.Info("fetchParts snail start", "type", kind, "pending", pending())
 	// Prepare the queue and fetch block parts until the block header fetcher's done
 	finished := false
 	for {
@@ -1062,7 +1062,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			return errCancel
 
 		case packet := <-deliveryCh:
-			log.Info("fetchParts start 111", "type", kind, "pending", pending())
+			log.Info("fetchParts snail start 111", "type", kind, "pending", pending())
 			// If the peer was previously banned and failed to deliver its pack
 			// in a reasonable time frame, ignore its message.
 			log.Debug("Snail downloader ", "id", packet.PeerId(), "function", "fetchParts")
@@ -1095,7 +1095,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			}
 
 		case cont := <-wakeCh:
-			log.Info("fetchParts start 222", "type", kind, "pending", pending(), "cont", cont)
+			log.Info("fetchParts snail start 222", "type", kind, "pending", pending(), "cont", cont)
 			// The header fetcher sent a continuation flag, check if it's done
 			if !cont {
 				finished = true
@@ -1107,7 +1107,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			}
 
 		case <-ticker.C:
-			log.Info("fetchParts start 333", "type", kind, "pending", pending())
+			log.Info("fetchParts snail start 333", "type", kind, "pending", pending())
 			// Sanity check update the progress
 			select {
 			case update <- struct{}{}:
@@ -1115,7 +1115,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			}
 
 		case <-update:
-			log.Info("fetchParts start 444", "type", kind, "pending", pending())
+			log.Info("fetchParts snail start 444", "type", kind, "pending", pending())
 			// Short circuit if we lost all our peers
 			if d.peers.Len() == 0 {
 				return errNoPeers
@@ -1157,7 +1157,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			// Send a download request to all idle peers, until throttled
 			progressed, throttled, running := false, false, inFlight()
 			idles, total := idle()
-			log.Info("fetchParts start 444", "type", kind, "pending", pending(), "running", running, "total", total)
+			log.Info("fetchParts snail start 444", "type", kind, "pending", pending(), "running", running, "total", total)
 
 			for _, peer := range idles {
 				// Short circuit if throttling activated
@@ -1173,7 +1173,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 				// no more headers are available, or that the peer is known not to
 				// have them.
 				request, progress, err := reserve(peer, capacity(peer))
-				log.Info("fetchParts start 444", "type", kind, "pending", pending(), "progress", progress, "request", request.From)
+				log.Info("fetchParts snail start 444", "type", kind, "pending", pending(), "progress", progress, "request", request.From)
 				if err != nil {
 					return err
 				}
@@ -1322,7 +1322,7 @@ func (d *Downloader) processHeaders(origin uint64, pivot uint64, td *big.Int) er
 				d.syncStatsChainHeight = origin - 1
 			}
 			d.syncStatsLock.Unlock()
-			log.Info("processHeaders", "headers", len(headers), "origin", origin)
+			log.Info("processHeaders snail", "headers", len(headers), "origin", origin)
 			// Signal the content downloaders of the availablility of new tasks
 			for _, ch := range []chan bool{d.bodyWakeCh} {
 				select {
@@ -1356,6 +1356,7 @@ func (d *Downloader) processFullSyncContent(p etrue.PeerConnection, hash common.
 	for {
 
 		results := d.queue.Results(d.mode == FullSync || oldPivot == nil)
+		log.Info("processFullSyncContent snail", "results", len(results))
 		if d.mode == FullSync && len(results) == 0 {
 			return nil
 		}
@@ -1497,7 +1498,7 @@ func (d *Downloader) SyncFast(peer string, head common.Hash, fbLastNumber uint64
 // DeliverHeaders injects a new batch of block headers received from a remote
 // node into the download schedule.
 func (d *Downloader) DeliverHeaders(id string, headers []*types.SnailHeader) (err error) {
-	log.Info("DeliverHeaders", "headers", len(headers))
+	log.Info("DeliverHeaders snail", "headers", len(headers))
 	return d.deliver(id, d.headerCh, &headerPack{id, headers}, headerInMeter, headerDropMeter)
 }
 

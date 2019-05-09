@@ -63,7 +63,7 @@ var (
 
 	fsHeaderCheckFrequency = 100             // Verification frequency of the downloaded headers during fast sync
 	fsHeaderSafetyNet      = 2048            // Number of headers to discard in case a chain violation is detected
-	fsHeaderContCheck      = 2 * time.Second // Time interval to check for header continuations during state download
+	fsHeaderContCheck      = 3 * time.Second // Time interval to check for header continuations during state download
 
 )
 
@@ -449,7 +449,7 @@ func (d *Downloader) syncWithPeer(p etrue.PeerConnection, hash common.Hash, orig
 	d.syncStatsLock.Unlock()
 
 	// Ensure our origin point is below any fast sync pivot point
-	pivot := origin + height
+	pivot := uint64(0)
 
 	d.committed = 1
 	if (d.mode == FastSync || d.mode == SnapShotSync) && pivot != 0 {
@@ -827,6 +827,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 	defer ticker.Stop()
 
 	update := make(chan struct{}, 1)
+	log.Info("fetchParts start", "type", kind, "pending", pending())
 
 	// Prepare the queue and fetch block parts until the block header fetcher's done
 	finished := false
@@ -867,6 +868,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			default:
 			}
 		case cont := <-wakeCh:
+			log.Info("fetchParts start 222", "type", kind, "pending", pending(), "cont", cont)
 			// The header fetcher sent a continuation flag, check if it's done
 			if !cont {
 				finished = true
@@ -1015,6 +1017,7 @@ func (d *Downloader) processHeaders(origin uint64, pivot uint64) error {
 
 	// Wait for batches of headers to process
 	gotHeaders := false
+	log.Info("processHeaders", "origin", origin, "pivot", pivot)
 
 	for {
 		select {
@@ -1056,8 +1059,7 @@ func (d *Downloader) processHeaders(origin uint64, pivot uint64) error {
 				return nil
 			}
 			// Otherwise split the chunk of headers into batches and process them
-			//gotHeaders = true
-
+			gotHeaders = true
 			for len(headers) > 0 {
 				// Terminate if something failed in between processing chunks
 				select {
@@ -1123,18 +1125,15 @@ func (d *Downloader) processHeaders(origin uint64, pivot uint64) error {
 				d.syncStatsChainHeight = origin - 1
 			}
 			d.syncStatsLock.Unlock()
-			log.Info("processHeaders over", "headers", len(headers), "origin", origin)
+			log.Info("processHeaders over", "headers", len(headers), "headerProcCh", len(d.headerProcCh), "origin", origin)
 			// Signal the content downloaders of the availablility of new tasks
 			for _, ch := range []chan bool{d.bodyWakeCh, d.receiptWakeCh} {
 				select {
-				case ch <- false:
+				case ch <- true:
 				default:
 				}
 			}
-			rollback = nil
-			return nil
 		}
-
 	}
 }
 
