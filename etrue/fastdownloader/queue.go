@@ -519,7 +519,6 @@ func (q *queue) reserveHeaders(p etrue.PeerConnection, count int, taskPool map[c
 			skip = append(skip, header)
 		} else {
 			send = append(send, header)
-			log.Info("reserveHeaders", "space", space, "proc", proc, "skip", len(skip), "send", len(send), "number", header.Number)
 		}
 	}
 	// Merge all the skipped headers back
