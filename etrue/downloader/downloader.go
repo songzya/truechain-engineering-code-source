@@ -1131,7 +1131,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 						peer.GetLog().Trace("Data delivery timed out", "type", kind)
 						setIdle(peer, 0)
 					} else {
-						peer.GetLog().Debug("Stalling delivery, dropping", "type", kind)
+						peer.GetLog().Debug("Stalling delivery,snail dropping", "type", kind)
 						if d.dropPeer == nil {
 							// The dropPeer method is nil when `--copydb` is used for a local copy.
 							// Timeouts can occur if e.g. compaction hits at the wrong time, and can be ignored
@@ -1469,7 +1469,6 @@ func (d *Downloader) SyncFast(peer string, head common.Hash, fbLastNumber uint64
 // DeliverHeaders injects a new batch of block headers received from a remote
 // node into the download schedule.
 func (d *Downloader) DeliverHeaders(id string, headers []*types.SnailHeader) (err error) {
-	log.Info("DeliverHeaders snail", "headers", len(headers))
 	return d.deliver(id, d.headerCh, &headerPack{id, headers}, headerInMeter, headerDropMeter)
 }
 

@@ -920,7 +920,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 						peer.GetLog().Trace("Data delivery timed out", "type", kind)
 						setIdle(peer, 0)
 					} else {
-						peer.GetLog().Debug("Stalling delivery, dropping", "type", kind)
+						peer.GetLog().Debug("Stalling delivery,fast dropping", "type", kind)
 						if d.dropPeer == nil {
 							// The dropPeer method is nil when `--copydb` is used for a local copy.
 							// Timeouts can occur if e.g. compaction hits at the wrong time, and can be ignored

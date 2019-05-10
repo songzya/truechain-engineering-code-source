@@ -34,9 +34,9 @@ import (
 )
 
 var (
-	blockCacheItems      = 512              // Maximum number of blocks to cache before throttling the download
-	blockCacheMemory     = 64 * 1024 * 1024 // Maximum amount of memory to use for block caching
-	blockCacheSizeWeight = 0.1              // Multiplier to approximate the average block size based on past ones
+	blockCacheItems      = 256               // Maximum number of blocks to cache before throttling the download
+	blockCacheMemory     = 128 * 1024 * 1024 // Maximum amount of memory to use for block caching
+	blockCacheSizeWeight = 0.1               // Multiplier to approximate the average block size based on past ones
 )
 
 var (
@@ -450,7 +450,6 @@ func (q *queue) reserveHeaders(p etrue.PeerConnection, count int, taskPool map[c
 			skip = append(skip, header)
 		} else {
 			send = append(send, header)
-			log.Info("reserveHeaders", "space", space, "proc", proc, "skip", len(skip), "send", len(send), "number", header.Number)
 		}
 	}
 	// Merge all the skipped headers back
