@@ -958,7 +958,6 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 				// no more headers are available, or that the peer is known not to
 				// have them.
 				request, progress, err := reserve(peer, capacity(peer))
-				log.Info("fetchParts start 444", "type", kind, "pending", pending(), "progress", progress, "request", request)
 				if err != nil {
 					return err
 				}
@@ -968,6 +967,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 				if request == nil {
 					continue
 				}
+				log.Info("fetchParts fast start 444", "type", kind, "pending", pending(), "progress", progress, "request", request)
 				if request.From > 0 {
 					peer.GetLog().Trace("Requesting new batch of data", "type", kind, "from", request.From)
 				} else {
