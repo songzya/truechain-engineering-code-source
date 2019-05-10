@@ -1178,11 +1178,10 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 				if request == nil {
 					continue
 				}
-				log.Info("fetchParts snail start 444", "type", kind, "pending", pending(), "progress", progress, "request", request)
 				if request.From > 0 {
-					peer.GetLog().Trace("Requesting new batch of data", "type", kind, "from", request.From)
+					peer.GetLog().Trace("Requesting new batch of data", "type", kind, "pending", pending(), "from", request.From)
 				} else {
-					peer.GetLog().Trace("Requesting new batch of data", "type", kind, "count", len(request.Sheaders), "from", request.Sheaders[0].Number)
+					peer.GetLog().Trace("Requesting new batch of data", "type", kind, "pending", pending(), "count", len(request.Sheaders), "progress", progress, "from", request.Sheaders[0].Number)
 				}
 				// Fetch the chunk and make sure any errors return the hashes to the queue
 				if fetchHook != nil {

@@ -967,11 +967,10 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 				if request == nil {
 					continue
 				}
-				log.Info("fetchParts fast start 444", "type", kind, "pending", pending(), "progress", progress, "request", request)
 				if request.From > 0 {
-					peer.GetLog().Trace("Requesting new batch of data", "type", kind, "from", request.From)
+					peer.GetLog().Trace("Requesting new batch of data", "type", kind, "pending", pending(), "progress", progress, "from", request.From)
 				} else {
-					peer.GetLog().Trace("Requesting new batch of data", "type", kind, "count", len(request.Fheaders), "from", request.Fheaders[0].Number)
+					peer.GetLog().Trace("Requesting new batch of data", "type", kind, "count", "pending", pending(), len(request.Fheaders), "progress", progress, "from", request.Fheaders[0].Number)
 				}
 				// Fetch the chunk and make sure any errors return the hashes to the queue
 				if fetchHook != nil {
