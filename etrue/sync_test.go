@@ -113,7 +113,7 @@ func TestFullSync(t *testing.T) {
 	// Create a pristine protocol manager, check that fast sync is left enabled
 	pmEmpty, _ := newTestProtocolManagerMust(t, downloader.FullSync, 0, 0, nil, nil, nil, nil)
 	// Create a full protocol manager, check that fast sync gets disabled
-	pmFull, _ := newTestProtocolManagerMust(t, downloader.FullSync, 256, 0, nil, nil, nil, nil)
+	pmFull, _ := newTestProtocolManagerMust(t, downloader.FullSync, 1023, 1024, nil, nil, nil, nil)
 	// Sync up the two peers
 	io1, io2 := p2p.MsgPipe()
 

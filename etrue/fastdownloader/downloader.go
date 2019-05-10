@@ -616,8 +616,8 @@ func (d *Downloader) Terminate() {
 // can fill in the skeleton - not even the origin peer - it's assumed invalid and
 // the origin is dropped.
 func (d *Downloader) fetchHeaders(p etrue.PeerConnection, from uint64, height int, pivot uint64) error {
-	p.GetLog().Debug("Directing header downloads", "origin", from)
-	defer p.GetLog().Debug("Header download terminated")
+	p.GetLog().Debug("Directing fast header downloads", "origin", from, "height", height)
+	defer p.GetLog().Debug("Fast header download terminated")
 
 	// Create a timeout timer, and the associated header fetcher
 	request := time.Now()       // time of the last skeleton fetch request
@@ -691,23 +691,39 @@ func (d *Downloader) fetchHeaders(p etrue.PeerConnection, from uint64, height in
 				}
 			}
 
+			index := -1
+			for i, head := range headers {
+				if head.Number.Int64() <= int64(height) {
+					index = i
+				}
+			}
+
 			// Insert all the new headers and fetch the next batch
 			if len(headers) > 0 {
+				if headers[0].Number.Int64() > int64(height) || index == -1 {
+					p.GetLog().Debug("No more fast headers available")
+					select {
+					case d.headerProcCh <- nil:
+						return nil
+					case <-d.cancelCh:
+						return errCancelHeaderFetch
+					}
+				}
 				p.GetLog().Trace("Scheduling new headers", "count", len(headers), "from", from, "headerProcCh", len(d.headerProcCh))
 				select {
-				case d.headerProcCh <- headers:
+				case d.headerProcCh <- headers[:index+1]:
 				case <-d.cancelCh:
 					return errCancelHeaderFetch
 				}
-				from += uint64(len(headers))
+				from += uint64(len(headers[:index+1]))
 				p.GetLog().Trace("Scheduling getHeaders", "count", len(headers), "from", from, "headerProcCh", len(d.headerProcCh))
 				getHeaders(from)
 			} else {
 				// No headers delivered, or all of them being delayed, sleep a bit and retry
-				p.GetLog().Trace("All headers delayed, waiting", "from", from)
+				p.GetLog().Trace("All snail headers delayed, waiting", "from", from)
 				select {
 				case <-time.After(fsHeaderContCheck):
-					p.GetLog().Trace("All headers delayed, waiting fsHeaderContCheck", "from", from)
+					p.GetLog().Trace("All snail headers delayed, waiting fsHeaderContCheck", "from", from)
 					getHeaders(from)
 					continue
 				case <-d.cancelCh:
@@ -1023,7 +1039,7 @@ func (d *Downloader) processHeaders(origin uint64, pivot uint64) error {
 			return errCancelHeaderProcessing
 
 		case headers := <-d.headerProcCh:
-			log.Info("processHeaders Terminate", "headers", len(headers), "PendingBlocks", d.queue.PendingBlocks(), "PendingReceipts", d.queue.PendingReceipts())
+			log.Info("processHeaders fast Terminate", "headers", len(headers), "PendingBlocks", d.queue.PendingBlocks(), "PendingReceipts", d.queue.PendingReceipts())
 			// Terminate header processing if we synced up
 			if len(headers) == 0 {
 				// Notify everyone that headers are fully processed
@@ -1123,7 +1139,7 @@ func (d *Downloader) processHeaders(origin uint64, pivot uint64) error {
 				d.syncStatsChainHeight = origin - 1
 			}
 			d.syncStatsLock.Unlock()
-			log.Info("processHeaders over", "headers", len(headers), "headerProcCh", len(d.headerProcCh), "origin", origin)
+			log.Info("processHeaders fast over", "headers", len(headers), "headerProcCh", len(d.headerProcCh), "origin", origin)
 			// Signal the content downloaders of the availablility of new tasks
 			for _, ch := range []chan bool{d.bodyWakeCh, d.receiptWakeCh} {
 				select {

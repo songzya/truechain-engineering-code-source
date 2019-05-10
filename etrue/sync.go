@@ -265,7 +265,7 @@ func (pm *ProtocolManager) synchronise(peer *peer) {
 	// Short circuit if no peers are available
 
 	if !atomic.CompareAndSwapInt32(&pm.synchronising, 0, 1) {
-		log.Debug("synchronise busy")
+		log.Debug("synchronise snail busy")
 		return
 	}
 	defer atomic.StoreInt32(&pm.synchronising, 0)
@@ -295,7 +295,7 @@ func (pm *ProtocolManager) synchronise(peer *peer) {
 
 	pm.fdownloader.SetSyncStatsChainHeightLast(fastHeight)
 	currentNumber := pm.blockchain.CurrentBlock().NumberU64()
-	log.Debug("synchronise  ", "pHead", pHead, "pTd", pTd, "td", td, "fastHeight", fastHeight, "currentNumber",currentNumber)
+	log.Debug("synchronise  ", "pHead", pHead, "pTd", pTd, "td", td, "fastHeight", fastHeight, "currentNumber", currentNumber)
 	if pTd.Cmp(td) <= 0 {
 
 		if fastHeight > currentNumber {

@@ -513,8 +513,8 @@ func (d *Downloader) cancel() {
 // Cancel aborts all of the operations and waits for all download goroutines to
 // finish before returning.
 func (d *Downloader) Cancel() {
-	d.cancel()
 	d.fastDown.Cancel()
+	d.cancel()
 	d.cancelWg.Wait()
 }
 
@@ -1065,7 +1065,6 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			log.Info("fetchParts snail start 111", "type", kind, "pending", pending())
 			// If the peer was previously banned and failed to deliver its pack
 			// in a reasonable time frame, ignore its message.
-			log.Debug("Snail downloader ", "id", packet.PeerId(), "function", "fetchParts")
 			if peer := d.peers.Peer(packet.PeerId()); peer != nil {
 				// Deliver the received chunk of data and check chain validity
 				accepted, err := deliver(packet)
@@ -1107,7 +1106,6 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			}
 
 		case <-ticker.C:
-			log.Info("fetchParts snail start 333", "type", kind, "pending", pending())
 			// Sanity check update the progress
 			select {
 			case update <- struct{}{}:
@@ -1115,7 +1113,6 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			}
 
 		case <-update:
-			log.Info("fetchParts snail start 444", "type", kind, "pending", pending())
 			// Short circuit if we lost all our peers
 			if d.peers.Len() == 0 {
 				return errNoPeers
@@ -1173,7 +1170,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 				// no more headers are available, or that the peer is known not to
 				// have them.
 				request, progress, err := reserve(peer, capacity(peer))
-				log.Info("fetchParts snail start 444", "type", kind, "pending", pending(), "progress", progress, "request", request.From)
+				log.Info("fetchParts snail start 444", "type", kind, "pending", pending(), "progress", progress, "request", request)
 				if err != nil {
 					return err
 				}
@@ -1250,6 +1247,7 @@ func (d *Downloader) processHeaders(origin uint64, pivot uint64, td *big.Int) er
 			return errCancelHeaderProcessing
 
 		case headers := <-d.headerProcCh:
+			log.Info("processHeaders Snail Terminate", "headers", len(headers), "headerProcCh", len(d.headerProcCh), "PendingBlocks", d.queue.PendingBlocks())
 			// Terminate header processing if we synced up
 			if len(headers) == 0 {
 				// Notify everyone that headers are fully processed
@@ -1322,7 +1320,7 @@ func (d *Downloader) processHeaders(origin uint64, pivot uint64, td *big.Int) er
 				d.syncStatsChainHeight = origin - 1
 			}
 			d.syncStatsLock.Unlock()
-			log.Info("processHeaders snail", "headers", len(headers), "origin", origin)
+			log.Info("processHeaders snail over", "headers", len(headers), "origin", origin)
 			// Signal the content downloaders of the availablility of new tasks
 			for _, ch := range []chan bool{d.bodyWakeCh} {
 				select {
@@ -1401,7 +1399,6 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 	blocks := []*types.SnailBlock{}
 	for _, result := range results {
 		block := types.NewSnailBlockWithHeader(result.Sheader).WithBody(result.Fruits, nil)
-		log.Trace("Snail importBlockResults  snail block ", "snailNumber", result.Sheader.Number, "Phash", result.Sheader.ParentHash, "hash", result.Sheader.Hash())
 
 		fruitLen := uint64(len(result.Fruits))
 		if fruitLen > 0 {
@@ -1425,7 +1422,7 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 		if err := d.SyncFast(p.GetID(), hash, fbLastNumber, d.mode); err != nil {
 			return err
 		}
-
+		log.Debug("Snail insert importBlockResults ", "blocks", len(blocks), "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
 		if index, err := d.blockchain.InsertChain(blocks); err != nil {
 			log.Error("Snail Downloaded item processing failed", "number", results[index].Sheader.Number, "hash", results[index].Sheader.Hash(), "err", err)
 			if err == types.ErrSnailHeightNotYet {
@@ -1447,49 +1444,23 @@ func (d *Downloader) SyncFast(peer string, head common.Hash, fbLastNumber uint64
 	} else if mode == SnapShotSync {
 		currentNumber = d.fastDown.GetBlockChain().CurrentHeader().Number.Uint64()
 	}
-	log.Debug("SyncFast fastDownloader ", "fbNumLast", fbLastNumber, "currentNum", currentNumber)
 
 	defer func(start time.Time) {
 		log.Debug("SyncFast Synchronisation terminated", "elapsed", time.Since(start))
 	}(time.Now())
+
 	if fbLastNumber > currentNumber {
-		for {
-			height := fbLastNumber - currentNumber
-			log.Debug("Snail run fastDownloader ", "heigth", height, "fbNumLast", fbLastNumber, "currentNum", currentNumber)
-			if height > 0 {
-				if height > maxheight {
-					height = maxheight
-				}
-				for {
+		log.Debug("Snail run fastDownloader ", "fbNumLast", fbLastNumber, "currentNum", currentNumber)
 
-					if mode == SnapShotSync && fbLastNumber > d.remoteHeader.Number.Uint64() {
-						mode = FastSync
-					}
+		if mode == SnapShotSync && fbLastNumber > d.remoteHeader.Number.Uint64() {
+			mode = FastSync
+		}
 
-					errs := d.fastDown.Synchronise(peer, head, fastdownloader.SyncMode(mode), currentNumber, height)
+		errs := d.fastDown.Synchronise(peer, head, fastdownloader.SyncMode(mode), currentNumber, fbLastNumber)
 
-					if errs != nil {
-						log.Error("Snail run SyncFast ", "err", errs, "heigth", height, "fbNumLast", fbLastNumber, "currentNum", currentNumber)
-						return errs
-					}
-
-					currentNumber_temp := d.fastDown.GetBlockChain().CurrentBlock().NumberU64()
-					if mode == FastSync {
-						currentNumber_temp = d.fastDown.GetBlockChain().CurrentFastBlock().NumberU64()
-					} else if mode == SnapShotSync {
-						currentNumber_temp = d.fastDown.GetBlockChain().CurrentHeader().Number.Uint64()
-					}
-					currentNumber = currentNumber_temp
-					if fbLastNumber > currentNumber_temp {
-						height = fbLastNumber - currentNumber
-						log.Debug("SNail run fastDownloader while", "heigth", height, "fbLastNumber", fbLastNumber, "currentNumber", currentNumber)
-						continue
-					}
-					break
-				}
-
-			}
-			return nil
+		if errs != nil {
+			log.Error("Snail run SyncFast ", "err", errs, "fbNumLast", fbLastNumber, "currentNum", currentNumber)
+			return errs
 		}
 	}
 	return nil
