@@ -843,7 +843,6 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 	defer ticker.Stop()
 
 	update := make(chan struct{}, 1)
-	log.Info("fetchParts start", "type", kind, "pending", pending())
 
 	// Prepare the queue and fetch block parts until the block header fetcher's done
 	finished := false
@@ -853,7 +852,6 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			return errCancel
 
 		case packet := <-deliveryCh:
-			log.Info("fetchParts start 111", "type", kind, "pending", pending())
 			// If the peer was previously banned and failed to deliver its pack
 			// in a reasonable time frame, ignore its message.
 			if peer := d.peers.Peer(packet.PeerId()); peer != nil {
@@ -871,11 +869,11 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 				// Issue a log to the user to see what's going on
 				switch {
 				case err == nil && packet.Items() == 0:
-					peer.GetLog().Trace("Requested data not delivered", "type", kind)
+					peer.GetLog().Trace("Requested data not fast delivered", "type", kind)
 				case err == nil:
-					peer.GetLog().Trace("Delivered new batch of data", "type", kind, "count", packet.Stats())
+					peer.GetLog().Trace("Delivered new batch of fast data", "type", kind, "count", packet.Stats())
 				default:
-					peer.GetLog().Trace("Failed to deliver retrieved data", "type", kind, "err", err)
+					peer.GetLog().Trace("Failed to deliver retrieved fast data", "type", kind, "err", err)
 				}
 			}
 			// Blocks assembled, try to update the progress
