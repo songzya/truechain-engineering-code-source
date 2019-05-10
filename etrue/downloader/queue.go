@@ -464,7 +464,7 @@ func (q *queue) reserveHeaders(p etrue.PeerConnection, count int, taskPool map[c
 	if len(send) == 0 {
 		return nil, progress, nil
 	}
-	log.Info("reserve snail Headers", "pendPool", len(pendPool), "donePool", len(donePool), "count", count, "send", len(send), "send", len(send), "progress", progress)
+	log.Info("reserve snail Headers", "space", space, "skip", len(skip), "pendPool", len(pendPool), "donePool", len(donePool), "count", count, "send", len(send), "progress", progress)
 	request := &etrue.FetchRequest{
 		Peer:     p,
 		Sheaders: send,

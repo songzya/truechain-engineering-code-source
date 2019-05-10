@@ -1394,7 +1394,7 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 		"firstnum", first.Number, "firsthash", first.Hash(),
 		"lastnum", last.Number, "lasthash", last.Hash(),
 	)
-	blocks := []*types.SnailBlock{}
+	sblocks := []*types.SnailBlock{}
 	for _, result := range results {
 		block := types.NewSnailBlockWithHeader(result.Sheader).WithBody(result.Fruits, nil)
 
@@ -1406,10 +1406,59 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 			if fbLastNumber < fbNumber || fbNumber < 1 {
 				return errFruits
 			}
-			blocks = append(blocks, block)
+			sblocks = append(sblocks, block)
 		}
 	}
-	if len(blocks) > 1 {
+	maxSize := 20
+	txLen := len(sblocks)
+	if txLen > maxSize {
+		for i := 0; i < txLen; {
+			i = i + maxSize
+			if i <= txLen {
+				blocks := sblocks[:maxSize]
+				firstB := blocks[0]
+				fbNumber := firstB.Fruits()[0].FastNumber().Uint64()
+
+				result := blocks[len(blocks)-1]
+				fruitLen := uint64(len(result.Fruits()))
+				fbLastNumber := result.Fruits()[fruitLen-1].FastNumber().Uint64()
+				log.Debug("Snail fats importBlockResults ", "fbNumber", fbNumber, "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
+				if err := d.SyncFast(p.GetID(), hash, fbLastNumber, d.mode); err != nil {
+					return err
+				}
+				log.Debug("Snail insert importBlockResults ", "blocks", len(blocks), "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
+				if index, err := d.blockchain.InsertChain(blocks); err != nil {
+					log.Error("Snail Downloaded item processing failed", "number", results[index].Sheader.Number, "hash", results[index].Sheader.Hash(), "err", err)
+					if err == types.ErrSnailHeightNotYet {
+						return err
+					}
+					return errInvalidChain
+				}
+				sblocks = append(blocks[:0], sblocks[maxSize:]...)
+			} else {
+				blocks := sblocks[:txLen%maxSize]
+				firstB := blocks[0]
+				fbNumber := firstB.Fruits()[0].FastNumber().Uint64()
+
+				result := blocks[len(blocks)-1]
+				fruitLen := uint64(len(result.Fruits()))
+				fbLastNumber := result.Fruits()[fruitLen-1].FastNumber().Uint64()
+				log.Debug("Snail fats importBlockResults ", "fbNumber", fbNumber, "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
+				if err := d.SyncFast(p.GetID(), hash, fbLastNumber, d.mode); err != nil {
+					return err
+				}
+				log.Debug("Snail insert importBlockResults ", "blocks", len(blocks), "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
+				if index, err := d.blockchain.InsertChain(blocks); err != nil {
+					log.Error("Snail Downloaded item processing failed", "number", results[index].Sheader.Number, "hash", results[index].Sheader.Hash(), "err", err)
+					if err == types.ErrSnailHeightNotYet {
+						return err
+					}
+					return errInvalidChain
+				}
+			}
+		}
+	} else if len(sblocks) > 1 {
+		blocks := sblocks
 		firstB := blocks[0]
 		fbNumber := firstB.Fruits()[0].FastNumber().Uint64()
 
@@ -1431,7 +1480,6 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 	}
 
 	return nil
-
 }
 
 func (d *Downloader) SyncFast(peer string, head common.Hash, fbLastNumber uint64, mode SyncMode) (err error) {
