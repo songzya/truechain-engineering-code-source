@@ -1661,11 +1661,13 @@ Chain config: %v
 
 Number: %v
 Hash: 0x%x
+SnailNumber: %v
+SnailHash: 0x%x
 %v
 
 Error: %v
 ##############################
-`, bc.chainConfig, block.Number(), block.Hash(), receiptString, err))
+`, bc.chainConfig, block.Number(), block.Hash(), block.SnailNumber(), block.SnailHash(), receiptString, err))
 }
 
 // InsertHeaderChain attempts to insert the given header chain in to the local
