@@ -1154,7 +1154,6 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			// Send a download request to all idle peers, until throttled
 			progressed, throttled, running := false, false, inFlight()
 			idles, total := idle()
-			log.Info("fetchParts snail start 444", "type", kind, "pending", pending(), "running", running, "total", total)
 
 			for _, peer := range idles {
 				// Short circuit if throttling activated
