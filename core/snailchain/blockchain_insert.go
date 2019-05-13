@@ -98,6 +98,7 @@ func (it *insertIterator) next() (*types.SnailBlock, error) {
 	if err := <-it.results; err != nil {
 		return it.chain[it.index], err
 	}
+	log.Info("start to next", "next number", it.chain[it.index].Number().Uint64())
 	err := it.validator.ValidateBody(it.chain[it.index])
 	if err == nil {
 		err = it.validator.ValidateRewarded(it.chain[it.index].NumberU64())
