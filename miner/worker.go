@@ -567,8 +567,8 @@ func (w *worker) commitNewWork() {
 	fruits := w.etrue.SnailPool().PendingFruits()
 
 	pendingFruits := w.CopyPendingFruit(fruits, w.chain)
+
 	//for create a new fruits for worker
-	//self.copyPendingFruit(fruits)
 	w.CommitFastBlocksByWoker(pendingFruits, w.chain, w.fastchain, w.engine)
 
 	// only miner fruit if not fruit set only miner the fruit

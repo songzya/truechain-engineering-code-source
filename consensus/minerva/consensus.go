@@ -97,7 +97,7 @@ func GetParents(chain consensus.SnailChainReader, header *types.SnailHeader) []*
 	if number < period {
 		period = number
 	}
-	//log.Info("getParents", "number", header.Number, "period", period)
+	log.Info("getParents", "number", header.Number, "period", period)
 	parents := make([]*types.SnailHeader, period)
 	hash := header.ParentHash
 	for i := uint64(1); i <= period; i++ {
@@ -112,7 +112,9 @@ func GetParents(chain consensus.SnailChainReader, header *types.SnailHeader) []*
 		parents[period-i] = parent
 		hash = parent.ParentHash
 	}
-
+	if len(parents) > 0 {
+		log.Info("---getParents", "len parent", len(parents), "parents[0].Number", parents[0].Number.Uint64(), "parents[len-1].Number", parents[len(parents)-1].Number.Uint64())
+	}
 	return parents
 }
 
