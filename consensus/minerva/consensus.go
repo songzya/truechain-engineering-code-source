@@ -97,7 +97,6 @@ func GetParents(chain consensus.SnailChainReader, header *types.SnailHeader) []*
 	if number < period {
 		period = number
 	}
-	log.Info("getParents", "number", header.Number, "period", period)
 	parents := make([]*types.SnailHeader, period)
 	hash := header.ParentHash
 	for i := uint64(1); i <= period; i++ {
@@ -111,9 +110,6 @@ func GetParents(chain consensus.SnailChainReader, header *types.SnailHeader) []*
 		}
 		parents[period-i] = parent
 		hash = parent.ParentHash
-	}
-	if len(parents) > 0 {
-		log.Info("---getParents", "len parent", len(parents), "parents[0].Number", parents[0].Number.Uint64(), "parents[len-1].Number", parents[len(parents)-1].Number.Uint64())
 	}
 	return parents
 }
@@ -317,7 +313,7 @@ func (m *Minerva) verifySnailHeaderWorker(chain consensus.SnailChainReader, head
 	}
 	count := len(parents) - len(headers) + index
 	var parentHeaders []*types.SnailHeader
-	if count != int(params.DifficultyPeriod.Int64()) {
+	if len(parents)-len(headers) < int(params.DifficultyPeriod.Int64()) {
 		parentHeaders = parents[:count]
 	} else {
 		parentHeaders = parents[index:count]
@@ -375,10 +371,6 @@ func (m *Minerva) verifySnailHeader(chain consensus.SnailChainReader, fastchain 
 	parents []*types.SnailHeader, uncle bool, seal bool, isFruit bool) error {
 	// Ensure that the header's extra-data section is of a reasonable size
 
-	if !isFruit {
-		log.Info("--verifySnailHeader", "Number", header.Number.Uint64(), "hash", header.Hash())
-	}
-
 	if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
 		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
 	}
@@ -399,7 +391,6 @@ func (m *Minerva) verifySnailHeader(chain consensus.SnailChainReader, fastchain 
 		if header.Time.Cmp(parents[len(parents)-1].Time) <= 0 {
 			return errZeroBlockTime
 		}
-		log.Info("start to calc the diff", "number", header.Number.Uint64(), "parets[0]", parents[0].Number.Uint64(), "pare[len]", parents[len(parents)-1].Number.Uint64())
 		// Verify the block's difficulty based in it's timestamp and parent's difficulty
 		expected := m.CalcSnailDifficulty(chain, header.Time.Uint64(), parents)
 
