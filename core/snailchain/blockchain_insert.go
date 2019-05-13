@@ -90,6 +90,7 @@ func newInsertIterator(chain types.SnailBlocks, results <-chan error, validator 
 // next returns the next block in the iterator, along with any potential validation
 // error for that block. When the end is reached, it will return (nil, nil).
 func (it *insertIterator) next() (*types.SnailBlock, error) {
+
 	if it.index+1 >= len(it.chain) {
 		it.index = len(it.chain)
 		return nil, nil
@@ -98,7 +99,6 @@ func (it *insertIterator) next() (*types.SnailBlock, error) {
 	if err := <-it.results; err != nil {
 		return it.chain[it.index], err
 	}
-	log.Info("start to next", "next number", it.chain[it.index].Number().Uint64())
 	err := it.validator.ValidateBody(it.chain[it.index])
 	if err == nil {
 		err = it.validator.ValidateRewarded(it.chain[it.index].NumberU64())
