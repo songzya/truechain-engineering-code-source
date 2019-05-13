@@ -316,7 +316,7 @@ func (m *Minerva) verifySnailHeaderWorker(chain consensus.SnailChainReader, head
 		return nil // known block
 	}
 	count := len(parents) - len(headers) + index
-	parentHeaders := parents[:count]
+	parentHeaders := parents[index:count]
 
 	return m.verifySnailHeader(chain, nil, headers[index], nil, parentHeaders, false, seals[index], false)
 }
