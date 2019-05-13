@@ -1428,7 +1428,7 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 				}
 				log.Debug("Snail insert importBlockResults ", "blocks", len(blocks), "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
 				if index, err := d.blockchain.InsertChain(blocks); err != nil {
-					log.Error("Snail Downloaded item processing failed", "number", results[index].Sheader.Number, "hash", results[index].Sheader.Hash(), "err", err)
+					log.Error("Snail Downloaded item processing failed 11", "number", blocks[index].Number, "hash", blocks[index].Hash(), "err", err)
 					if err == types.ErrSnailHeightNotYet {
 						return err
 					}
@@ -1449,7 +1449,7 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 				}
 				log.Debug("Snail insert importBlockResults ", "blocks", len(blocks), "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
 				if index, err := d.blockchain.InsertChain(blocks); err != nil {
-					log.Error("Snail Downloaded item processing failed", "number", results[index].Sheader.Number, "hash", results[index].Sheader.Hash(), "err", err)
+					log.Error("Snail Downloaded item processing failed 22", "number", blocks[index].Number, "hash", blocks[index].Hash(), "err", err)
 					if err == types.ErrSnailHeightNotYet {
 						return err
 					}
@@ -1457,7 +1457,7 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 				}
 			}
 		}
-	} else if len(sblocks) > 1 {
+	} else if len(sblocks) > 0 {
 		blocks := sblocks
 		firstB := blocks[0]
 		fbNumber := firstB.Fruits()[0].FastNumber().Uint64()
@@ -1471,7 +1471,7 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 		}
 		log.Debug("Snail insert importBlockResults ", "blocks", len(blocks), "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
 		if index, err := d.blockchain.InsertChain(blocks); err != nil {
-			log.Error("Snail Downloaded item processing failed", "number", results[index].Sheader.Number, "hash", results[index].Sheader.Hash(), "err", err)
+			log.Error("Snail Downloaded item processing failed 33", "number", blocks[index].Number, "hash", blocks[index].Hash(), "err", err)
 			if err == types.ErrSnailHeightNotYet {
 				return err
 			}
