@@ -386,13 +386,19 @@ func (m *Minerva) verifySnailHeader(chain consensus.SnailChainReader, fastchain 
 			}
 		}
 	}
+
+	parents2 := m.getParents(chain, header)
+	if parents2 == nil {
+		return consensus.ErrUnknownAncestor
+	}
+
 	if !isFruit {
-		if header.Time.Cmp(parents[len(parents)-1].Time) <= 0 {
+		if header.Time.Cmp(parents2[len(parents)-1].Time) <= 0 {
 			return errZeroBlockTime
 		}
 
 		// Verify the block's difficulty based in it's timestamp and parent's difficulty
-		expected := m.CalcSnailDifficulty(chain, header.Time.Uint64(), parents)
+		expected := m.CalcSnailDifficulty(chain, header.Time.Uint64(), parents2)
 
 		if expected.Cmp(header.Difficulty) != 0 {
 			return fmt.Errorf("invalid difficulty: have %v, want %v", header.Difficulty, expected)
