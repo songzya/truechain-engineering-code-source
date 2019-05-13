@@ -369,6 +369,8 @@ func (m *Minerva) verifyHeader(chain consensus.ChainReader, header, parent *type
 func (m *Minerva) verifySnailHeader(chain consensus.SnailChainReader, fastchain consensus.ChainReader, header, pointer *types.SnailHeader,
 	parents []*types.SnailHeader, uncle bool, seal bool, isFruit bool) error {
 	// Ensure that the header's extra-data section is of a reasonable size
+
+	log.Info("--verifySnailHeader", "Number", header.Number.Uint64(), "hash", header.Hash())
 	if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
 		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
 	}
