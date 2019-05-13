@@ -370,7 +370,10 @@ func (m *Minerva) verifySnailHeader(chain consensus.SnailChainReader, fastchain 
 	parents []*types.SnailHeader, uncle bool, seal bool, isFruit bool) error {
 	// Ensure that the header's extra-data section is of a reasonable size
 
-	log.Info("--verifySnailHeader", "Number", header.Number.Uint64(), "hash", header.Hash())
+	if !isFruit {
+		log.Info("--verifySnailHeader", "Number", header.Number.Uint64(), "hash", header.Hash())
+	}
+
 	if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
 		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
 	}
@@ -387,18 +390,13 @@ func (m *Minerva) verifySnailHeader(chain consensus.SnailChainReader, fastchain 
 		}
 	}
 
-	parents2 := m.getParents(chain, header)
-	if parents2 == nil {
-		return consensus.ErrUnknownAncestor
-	}
-
 	if !isFruit {
-		if header.Time.Cmp(parents2[len(parents)-1].Time) <= 0 {
+		if header.Time.Cmp(parents[len(parents)-1].Time) <= 0 {
 			return errZeroBlockTime
 		}
-
+		log.Info("start to calc the diff", "number", header.Number.Uint64(), "parets[0]", parents[0].Number.Uint64(), "pare[len]", parents[len(parents)-1].Number.Uint64())
 		// Verify the block's difficulty based in it's timestamp and parent's difficulty
-		expected := m.CalcSnailDifficulty(chain, header.Time.Uint64(), parents2)
+		expected := m.CalcSnailDifficulty(chain, header.Time.Uint64(), parents)
 
 		if expected.Cmp(header.Difficulty) != 0 {
 			return fmt.Errorf("invalid difficulty: have %v, want %v", header.Difficulty, expected)
