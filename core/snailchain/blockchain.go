@@ -892,6 +892,7 @@ func (bc *SnailBlockChain) insertChain(chain types.SnailBlocks, verifySeals bool
 			return it.index, events, err
 		}
 		blockWriteTimer.Update(t1.Sub(t0))
+		log.Info("writeCanonicalBlock", "blockWriteTimer", t1.Sub(t0))
 		switch status {
 		case CanonStatTy:
 
