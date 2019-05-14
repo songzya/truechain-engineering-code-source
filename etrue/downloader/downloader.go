@@ -1062,7 +1062,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan etrue.DataPack,
 			return errCancel
 
 		case packet := <-deliveryCh:
-			log.Info("fetchParts snail start 111", "type", kind, "pending", pending(), "count", packet.Stats())
+			log.Info("Snail deliver", "type", kind, "pending", pending(), "count", packet.Stats())
 			// If the peer was previously banned and failed to deliver its pack
 			// in a reasonable time frame, ignore its message.
 			if peer := d.peers.Peer(packet.PeerId()); peer != nil {
