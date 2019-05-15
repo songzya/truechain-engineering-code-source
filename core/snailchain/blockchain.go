@@ -882,17 +882,13 @@ func (bc *SnailBlockChain) insertChain(chain types.SnailBlocks, verifySeals bool
 			bc.reportBlock(block, ErrBlacklistedHash)
 			return it.index, events, ErrBlacklistedHash
 		}
-		t0 := time.Now()
 
 		// Write the block to the chain and get the status.
 		status, err := bc.writeCanonicalBlock(block)
-		t1 := time.Now()
 		if err != nil {
 			log.Info("Write new snail canonical block error", "number", block.Number(), "hash", block.Hash(), "err", err)
 			return it.index, events, err
 		}
-		blockWriteTimer.Update(t1.Sub(t0))
-		log.Info("writeCanonicalBlock", "blockWriteTimer", t1.Sub(t0))
 		switch status {
 		case CanonStatTy:
 

@@ -1409,7 +1409,7 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 			sblocks = append(sblocks, block)
 		}
 	}
-	maxSize := 10
+	maxSize := 12
 	txLen := len(sblocks)
 	if txLen > maxSize {
 		for i := 0; i < txLen; {
@@ -1426,7 +1426,7 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 				if err := d.SyncFast(p.GetID(), hash, fbLastNumber, d.mode); err != nil {
 					return err
 				}
-				log.Info("Snail insert importBlockResults ", "blocks", len(blocks), "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
+				log.Info("Snail insert importBlockResults ", "blocks", len(blocks), "fbNumber", fbNumber, "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
 				if index, err := d.blockchain.InsertChain(blocks); err != nil {
 					log.Error("Snail Downloaded item processing failed 11", "number", blocks[index].Number, "hash", blocks[index].Hash(), "err", err)
 					if err == types.ErrSnailHeightNotYet {
@@ -1447,7 +1447,7 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 				if err := d.SyncFast(p.GetID(), hash, fbLastNumber, d.mode); err != nil {
 					return err
 				}
-				log.Info("Snail insert importBlockResults ", "blocks", len(blocks), "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
+				log.Info("Snail insert importBlockResults ", "blocks", len(blocks), "fbNumber", fbNumber, "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
 				if index, err := d.blockchain.InsertChain(blocks); err != nil {
 					log.Error("Snail Downloaded item processing failed 22", "number", blocks[index].Number, "hash", blocks[index].Hash(), "err", err)
 					if err == types.ErrSnailHeightNotYet {
@@ -1469,7 +1469,7 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 		if err := d.SyncFast(p.GetID(), hash, fbLastNumber, d.mode); err != nil {
 			return err
 		}
-		log.Info("Snail insert importBlockResults ", "blocks", len(blocks), "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
+		log.Info("Snail insert importBlockResults ", "blocks", len(blocks), "fbNumber", fbNumber, "fbLastNumber", fbLastNumber, "first", firstB.Number(), "last", result.Number())
 		if index, err := d.blockchain.InsertChain(blocks); err != nil {
 			log.Error("Snail Downloaded item processing failed 33", "number", blocks[index].Number, "hash", blocks[index].Hash(), "err", err)
 			if err == types.ErrSnailHeightNotYet {
