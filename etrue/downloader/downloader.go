@@ -1409,7 +1409,7 @@ func (d *Downloader) importBlockResults(results []*etrue.FetchResult, p etrue.Pe
 			sblocks = append(sblocks, block)
 		}
 	}
-	maxSize := 12
+	maxSize := 14
 	txLen := len(sblocks)
 	if txLen > maxSize {
 		for i := 0; i < txLen; {
