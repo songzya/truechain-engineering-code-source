@@ -27,6 +27,7 @@ import (
 	"github.com/truechain/truechain-engineering-code/core/types"
 	"github.com/truechain/truechain-engineering-code/params"
 	"math/big"
+	time2 "time"
 )
 
 var (
@@ -137,20 +138,22 @@ func (v *BlockValidator) ValidateBody(block *types.SnailBlock) error {
 		log.Info("ValidateBody snail validate time gap error", "block", block.Number(), "first fb number", minfb.Number, "first fb time", minfb.Time, "last fb number", maxfb.Number, "last fb time", maxfb.Time, "tim gap", gap)
 		return ErrGapFruits
 	}
+	start := time2.Now()
 	for _, fruit := range fruits {
 		if fruit.FastNumber().Uint64()-temp != 1 {
 			log.Info("ValidateBody snail validate fruit error", "block", block.Number(), "first", fruits[0].FastNumber(), "count", len(fruits),
 				"fruit", fruit.FastNumber(), "pre", temp)
 			return ErrInvalidFruits
 		}
+		validate := time2.Now()
 		if err := v.ValidateFruit(fruit, block, false); err != nil {
 			log.Info("ValidateBody snail validate fruit error", "block", block.Number(), "fruit", fruit.FastNumber(), "hash", fruit.FastHash(), "err", err)
 			return err
 		}
-
+		log.Info("next()", "ValidateFruit", time2.Since(validate))
 		temp = fruit.FastNumber().Uint64()
 	}
-
+	log.Info("next()", "validateFruits", time2.Since(start), "len(fruits)", len(fruits))
 	if hash := types.DeriveSha(types.Fruits(block.Fruits())); hash != header.FruitsHash {
 		return fmt.Errorf("fruits hash mismatch: have %x, want %x", hash, header.FruitsHash)
 	}
@@ -197,23 +200,26 @@ func (v *BlockValidator) ValidateFruit(fruit, block *types.SnailBlock, canonical
 	if block != nil {
 		blockHeader = block.Header()
 	}
+	start := time2.Now()
 	err := v.engine.VerifyFreshness(v.bc, fruit.Header(), blockHeader, canonical)
 	if err != nil {
 		log.Debug("ValidateFruit verify freshness error.", "err", err, "fruit", fruit.FastNumber())
 		return err
 	}
-
+	log.Info("next()", "VerifyFreshness", time2.Since(start))
+	start = time2.Now()
 	header := fruit.Header()
 	if err := v.engine.VerifySnailHeader(v.bc, v.fastchain, header, true, true); err != nil {
 		log.Info("validate fruit verify failed.", "err", err)
 		return err
 	}
-
+	log.Info("next()", "VerifySnailHeader", time2.Since(start))
+	start = time2.Now()
 	// validate the signatures of this fruit
 	if err := v.engine.VerifySigns(fruit.FastNumber(), fruit.FastHash(), fruit.Signs()); err != nil {
 		log.Info("validate fruit VerifySigns failed.", "err", err)
 		return err
 	}
-
+	log.Info("next()", "VerifySigns", time2.Since(start))
 	return nil
 }
