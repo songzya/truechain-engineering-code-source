@@ -363,6 +363,7 @@ func (hc *HeaderChain) GetTd(hash common.Hash, number uint64) *big.Int {
 	}
 	// Cache the found body for next time and return
 	hc.tdCache.Add(hash, td)
+	log.Info("GetTd", "number", number, "hash", hash, "td", td)
 	return td
 }
 
